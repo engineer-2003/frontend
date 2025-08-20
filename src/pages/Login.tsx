@@ -1,4 +1,3 @@
-import "../App.css";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
@@ -6,10 +5,10 @@ export default function Login() {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-green-50">
-      {/* 상단 로고 */}
+      {/* 상단 아이콘 + 타이틀 */}
       <div className="mb-10 flex flex-col items-center">
-        <div className="w-10 h-10 rounded-full bg-green-500 mb-3"></div>
-        <h2 className="text-2xl font-bold">로그인</h2>
+        <div className="text-green-500 text-5xl mb-3">✿</div>
+        <h2 className="text-2xl font-bold text-green-600">로그인</h2>
       </div>
 
       {/* 입력창 */}
