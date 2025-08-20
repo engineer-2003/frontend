@@ -1,42 +1,76 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 전체 화면 */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(to bottom, #e6f9e6, #f5fff5); /* 연한 초록 그라데이션 */
+  font-family: "Arial", sans-serif;
 }
 
+/* 제목 */
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #2e8b57; /* 초록색 */
+  margin-bottom: 40px;
+}
+
+/* 로고 */
 .logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  width: 120px;
+  height: 120px;
+  margin-bottom: 60px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* 버튼 그룹 */
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* 로그인 버튼 */
+.login-btn {
+  width: 200px;
+  height: 45px;
+  background-color: #2e8b57;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
 }
 
-.card {
-  padding: 2em;
+.login-btn:hover {
+  background-color: #256d45;
 }
 
-.read-the-docs {
-  color: #888;
+/* 회원가입 버튼 */
+.signup-btn {
+  width: 200px;
+  height: 45px;
+  background-color: white;
+  color: #2e8b57;
+  border: 2px solid #2e8b57;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.signup-btn:hover {
+  background-color: #f0fff0;
+}
+
+
+.button-group {
+  display: flex;
+  flex-direction: column; /* 세로 정렬 */
+  gap: 10px;            
+  align-items: center;    
 }
