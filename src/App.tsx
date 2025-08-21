@@ -15,6 +15,9 @@ export default function App() {
       <Route path="/mainSelect" element={<MainSelect />} />
       <Route path="/levelSelect" element={<LevelSelect />} />
       <Route path="/partSelect" element={<PartSelect />} />
+      
     </Routes>
+
+    
   );
 }
