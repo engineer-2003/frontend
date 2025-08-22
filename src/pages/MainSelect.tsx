@@ -35,7 +35,9 @@ const MainPage: React.FC = () => {
         </button>
 
         {/* 학습 기록 확인 버튼 */}
-        <button className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+        <button 
+        onClick={() => navigate("/history")}
+        className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
           학습 기록 확인
         </button>
       </div>
