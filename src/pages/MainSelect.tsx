@@ -30,7 +30,10 @@ const MainPage: React.FC = () => {
         <div className="text-green-400 text-xl mb-6">✿</div>
 
         {/* 문형별 학습 버튼 */}
-        <button className="w-3/4 py-3 border border-green-500 text-green-600 rounded-lg mb-10 hover:bg-green-100 transition">
+        <button
+          className="w-3/4 py-3 border border-green-500 text-green-600 rounded-lg mb-10 hover:bg-green-100 transition"
+          onClick={() => navigate("/study")}
+        >
           문형별 학습
         </button>
 
