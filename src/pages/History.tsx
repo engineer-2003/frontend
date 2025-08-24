@@ -46,7 +46,7 @@ export default function History() {
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-5 h-5 text-green-500" />
               <span className="text-gray-700">오늘</span>
-              <span className="text-gray-500">급수(N5)</span>
+              <span className="text-gray-500">N5(형용사)</span>
             </div>
             <span className="text-gray-600">단어 18개 (31분)</span>
           </li>
@@ -64,7 +64,7 @@ export default function History() {
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-5 h-5 text-green-500" />
               <span className="text-gray-700">4일 전</span>
-              <span className="text-gray-500">급수(N3)</span>
+              <span className="text-gray-500">N3(동사)</span>
             </div>
             <span className="text-gray-600">단어 18개 (20분)</span>
           </li>
