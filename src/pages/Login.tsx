@@ -12,7 +12,7 @@ export default function Login() {
       </div>
 
       {/* 입력창 */}
-      <div className="w-80 bg-white rounded-2xl shadow p-8">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow p-8">
         <div className="mb-6">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             아이디
