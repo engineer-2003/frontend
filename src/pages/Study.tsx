@@ -25,7 +25,7 @@ const Study: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center">
       {/* Header */}
-      <div className="w-full bg-white py-4 px-6 flex justify-between items-center shadow">
+      <div className="w-full bg-white rounded-b-3xl py-4 px-6 flex justify-between items-center shadow">
         <button
           onClick={() => navigate(-1)}
           className="text-gray-500 text-sm"
