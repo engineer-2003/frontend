@@ -6,11 +6,25 @@ import "../App.css";
 const MainPage: React.FC = () => {
   const navigate = useNavigate();
 
+  const handleLogout = () => {
+    alert("로그아웃 되었습니다.");
+    navigate("/"); // 로그인 페이지로 이동
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col items-center">
       {/* Header */}
-      <div className="w-full rounded-b-3xl py-8 text-center shadow-sm">
+      <div className="w-full rounded-b-3xl py-8 shadow-sm relative text-center">
+        {/* 중앙 제목 */}
         <h1 className="text-2xl font-bold">나의 학습</h1>
+
+        {/* 오른쪽 로그아웃 버튼 */}
+        <button
+          onClick={handleLogout}
+          className="absolute right-6 top-1/2 -translate-y-1/2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+        >
+          로그아웃
+        </button>
       </div>
 
       {/* Content */}
@@ -38,9 +52,10 @@ const MainPage: React.FC = () => {
         </button>
 
         {/* 학습 기록 확인 버튼 */}
-        <button 
-        onClick={() => navigate("/history")}
-        className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+        <button
+          onClick={() => navigate("/history")}
+          className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+        >
           학습 기록 확인
         </button>
       </div>
