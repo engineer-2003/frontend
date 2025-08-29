@@ -25,8 +25,8 @@ const PartSelect: React.FC = () => {
     return <div>급수를 선택해주세요.</div>;
   }
 
-  const handleStartClick = (part: Part) => {
-    navigate("/study", { state: { level, partId: part.title } });
+  const handleStartClick = (partId: string) => {
+    navigate("/study", { state: { level, partId } });
   };
 
   return (
@@ -47,7 +47,7 @@ const PartSelect: React.FC = () => {
               진도율: {part.progress}%
             </p>
             <button
-              onClick={() => handleStartClick(part)}
+              onClick={() => handleStartClick(part.id)}
               className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition">
               학습 시작
             </button>
