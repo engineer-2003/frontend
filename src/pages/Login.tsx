@@ -1,7 +1,30 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (response.ok) {
+        alert("로그인 성공!");
+        navigate("/mainSelect");
+      } else {
+        alert("아이디 또는 비밀번호가 잘못되었습니다.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("서버 오류가 발생했습니다.");
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-green-50">
@@ -19,6 +42,8 @@ export default function Login() {
           </label>
           <input
             type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             placeholder="아이디"
             className="w-full border-b border-green-400 focus:outline-none py-2 text-green-600"
           />
@@ -30,6 +55,8 @@ export default function Login() {
           </label>
           <input
             type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             placeholder="비밀번호"
             className="w-full border-b border-green-400 focus:outline-none py-2 text-green-600"
           />
@@ -38,7 +65,7 @@ export default function Login() {
         {/* 로그인 버튼 */}
         <button
           className="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
-          onClick={() => navigate("/mainSelect")}
+          onClick={handleLogin}
         >
           로그인
         </button>
