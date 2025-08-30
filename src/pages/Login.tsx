@@ -14,7 +14,19 @@ export default function Login() {
         body: JSON.stringify({ username, password }),
       });
 
-      if (response.ok) {
+    if (response.ok) {
+        const data = await response.json();
+
+        // ✅ 유저 정보 + JWT 토큰 저장
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            userId: data.userId,
+            username: data.username,
+            token: data.token, // 백엔드에서 발급한 JWT
+          })
+        );
+
         alert("로그인 성공!");
         navigate("/mainSelect");
       } else {
@@ -28,13 +40,11 @@ export default function Login() {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-green-50">
-      {/* 상단 아이콘 + 타이틀 */}
       <div className="mb-10 flex flex-col items-center">
         <div className="text-green-500 text-5xl mb-3">✿</div>
         <h2 className="text-2xl font-bold text-green-600">로그인</h2>
       </div>
 
-      {/* 입력창 */}
       <div className="w-full max-w-md bg-white rounded-2xl shadow p-8">
         <div className="mb-6">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -62,7 +72,6 @@ export default function Login() {
           />
         </div>
 
-        {/* 로그인 버튼 */}
         <button
           className="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
           onClick={handleLogin}
