@@ -6,6 +6,7 @@ import MainSelect from "./pages/MainSelect";
 import LevelSelect from "./pages/LevelSelect";
 import PartSelect from "./pages/PartSelect";
 import History from "./pages/History";
+import Study from "./pages/Study";
 
 export default function App() {
   return (
@@ -16,10 +17,8 @@ export default function App() {
       <Route path="/mainSelect" element={<MainSelect />} />
       <Route path="/levelSelect" element={<LevelSelect />} />
       <Route path="/partSelect" element={<PartSelect />} />
-       <Route path="/history" element={<History />} />
-      
+      <Route path="/history" element={<History />} />
+      <Route path="/study" element={<Study />} />
     </Routes>
-
-    
   );
 }
