@@ -51,6 +51,8 @@ export default function History() {
 
   const days = ["일", "월", "화", "수", "목", "금", "토"];
 
+  const maxTime = Math.max(...weekStats, 1); // ✅ 0 방지용
+
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50">
       <div className="w-80 bg-white rounded-2xl shadow p-6 mt-10 mb-8">
@@ -60,15 +62,25 @@ export default function History() {
         </p>
 
         <div className="flex items-end justify-between h-24">
-          {weekStats.map((value, i) => (
-            <div key={i} className="flex flex-col items-center">
+          {weekStats.map((value, i) => {
+            const height = (value / maxTime) * 100;
+            const alpha = 0.3 + (value / maxTime) * 0.7; // ✅ 진하기 (0.3~1)
+            return (
               <div
-                className="w-4 rounded bg-green-400"
-                style={{ height: `${value * 2}px` }}
-              ></div>
-              <span className="text-xs mt-1">{days[i]}</span>
-            </div>
-          ))}
+                key={i}
+                className="flex flex-col items-center h-full justify-end"
+              >
+                <div
+                  className="w-4 rounded"
+                  style={{
+                    height: `${height}%`,
+                    backgroundColor: `rgba(34,197,94,${alpha})`, // green-500 + alpha
+                  }}
+                ></div>
+                <span className="text-xs mt-1">{days[i]}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -79,20 +91,30 @@ export default function History() {
         </div>
 
         <ul className="space-y-4 text-sm">
-          {records.map((r, i) => (
-            <li key={i} className="flex items-center justify-between border-b pb-2">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                <span className="text-gray-700">{r.studyDate}</span>
-                <span className="text-gray-500">
-                  {r.levelName}({r.partOfSpeech})
+          {records.map((r, i) => {
+            const dateObj = new Date(r.studyDate);
+            const dayName = days[dateObj.getDay()];
+            return (
+              <li
+                key={i}
+                className="flex items-center justify-between border-b pb-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  {/* 날짜 + 요일 표시 */}
+                  <span className="text-gray-700">
+                    {r.studyDate} ({dayName})
+                  </span>
+                  <span className="text-gray-500">
+                    {r.levelName}({r.partOfSpeech})
+                  </span>
+                </div>
+                <span className="text-gray-600">
+                  단어 {r.wordCount}개 ({formatTime(r.studyTime)})
                 </span>
-              </div>
-              <span className="text-gray-600">
-                단어 {r.wordCount}개 ({formatTime(r.studyTime)})
-              </span>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>
