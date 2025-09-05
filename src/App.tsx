@@ -1,12 +1,12 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+import Signup from "./pages/SignUp";
 import MainSelect from "./pages/MainSelect";
 import LevelSelect from "./pages/LevelSelect";
 import PartSelect from "./pages/PartSelect";
-import History from "./pages/History";
 import Study from "./pages/Study";
+import History from "./pages/History";
 
 export default function App() {
   return (
@@ -17,8 +17,8 @@ export default function App() {
       <Route path="/mainSelect" element={<MainSelect />} />
       <Route path="/levelSelect" element={<LevelSelect />} />
       <Route path="/partSelect" element={<PartSelect />} />
-      <Route path="/history" element={<History />} />
       <Route path="/study" element={<Study />} />
+      <Route path="/history" element={<History />} />
     </Routes>
   );
 }

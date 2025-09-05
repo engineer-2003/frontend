@@ -39,10 +39,10 @@ export default function Login() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-green-50">
+    <div className="flex flex-col items-center justify-center h-screen bg-sakura-lighter">
       <div className="mb-10 flex flex-col items-center">
-        <div className="text-green-500 text-5xl mb-3">✿</div>
-        <h2 className="text-2xl font-bold text-green-600">로그인</h2>
+        <div className="text-sakura text-5xl mb-3">✿</div>
+        <h2 className="text-2xl font-bold text-branch">로그인</h2>
       </div>
 
       <div className="w-full max-w-md bg-white rounded-2xl shadow p-8">
@@ -55,7 +55,7 @@ export default function Login() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="아이디"
-            className="w-full border-b border-green-400 focus:outline-none py-2 text-green-600"
+            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
           />
         </div>
 
@@ -68,12 +68,12 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="비밀번호"
-            className="w-full border-b border-green-400 focus:outline-none py-2 text-green-600"
+            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
           />
         </div>
 
         <button
-          className="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
+          className="w-full py-2 bg-sakura-dark text-white rounded-md hover:bg-sakura-darker transition"
           onClick={handleLogin}
         >
           로그인

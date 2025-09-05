@@ -39,7 +39,7 @@ const Study: React.FC = () => {
         <h1 className="text-3xl font-bold mb-2">
           {level} &gt; {partId}
         </h1>
-        <div className="text-green-500 text-xl mb-6">✿</div>
+        <div className="text-sakura text-xl mb-6">✿</div>
 
         <div className="bg-white rounded-2xl shadow-md w-full p-6 text-center">
           <h2 className="text-xl font-semibold mb-2">승리의 쾌감을 맛보다</h2>
@@ -47,15 +47,12 @@ const Study: React.FC = () => {
 
           {/* Input */}
           <div className="mb-4">
-            <label className="block text-left text-sm font-medium text-gray-700 mb-1">
-              정답 입력
-            </label>
             <input
               type="text"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               placeholder="정답"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+             className="w-full border-b border-branch focus:outline-none px-2 py-2 text-branch"
             />
           </div>
 
@@ -63,13 +60,13 @@ const Study: React.FC = () => {
           <div className="flex justify-between">
             <button
               onClick={handleNextWord}
-              className="w-[48%] px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+              className="w-[48%] px-4 py-2 bg-sakura-dark text-white rounded-lg hover:bg-sakura-darker transition"
             >
               다음 단어
             </button>
             <button
               onClick={handleCheckAnswer}
-              className="w-[48%] px-4 py-2 border border-green-500 text-green-600 rounded-lg hover:bg-green-50 transition"
+              className="w-[48%] px-4 py-2 border border-sakura-dark text-sakura-dark rounded-lg hover:bg-sakura-darker hover:text-white transition"
             >
               정답 확인
             </button>

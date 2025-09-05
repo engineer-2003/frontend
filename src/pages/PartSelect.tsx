@@ -1,6 +1,13 @@
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import SelectPage from "../components/SelectPage";
+
+type Part = {
+  id: string;
+  title: string;
+  wordCount: number;
+  progress: number;
+};
 
 const partData = [
   { id: "noun", title: "명사", wordCount: 120, progress: 20 },
@@ -18,11 +25,12 @@ const PartSelect: React.FC = () => {
 
   return (
     <SelectPage
-      headerTitle={`${level} 급수 품사 선택`}
+      headerTitle={`${level} 품사 선택`}
+      headerExtra="✿"
       items={partData.map((part) => ({
         id: part.id,
         title: part.title,
-        description: `단어 수: ${part.wordCount}개 | 진도율: ${part.progress}%`,
+        description: `단어 수: ${part.wordCount}개\n진도율: ${part.progress}%`,
         onClick: () => navigate(`/study?level=${level}&part=${part.id}`),
       }))}
     />

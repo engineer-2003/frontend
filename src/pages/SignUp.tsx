@@ -34,9 +34,9 @@ export default function Signup() {
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-white">
-      <div className="w-full bg-green-500 py-10 flex flex-col items-center text-white rounded-b-2xl">
+      <div className="w-full bg-sakura py-10 flex flex-col items-center text-white rounded-b-2xl">
         <div className="text-3xl mb-3">✿</div>
-        <h2 className="text-xl font-bold">회원 가입 페이지</h2>
+        <h2 className="text-xl font-bold text-branch">회원 가입 페이지</h2>
       </div>
 
       <div className="w-80 mt-10 space-y-6">
@@ -46,7 +46,7 @@ export default function Signup() {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full border px-3 py-2"
+            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
           />
         </div>
 
@@ -56,7 +56,7 @@ export default function Signup() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border px-3 py-2"
+            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
           />
         </div>
 
@@ -66,13 +66,13 @@ export default function Signup() {
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full border px-3 py-2"
+            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
           />
         </div>
 
         <button
           onClick={handleSignup}
-          className="w-full py-3 bg-green-500 text-white rounded-md"
+          className="w-full py-3 bg-sakura-dark text-white rounded-md hover:bg-sakura-darker transition"
         >
           회원 가입
         </button>

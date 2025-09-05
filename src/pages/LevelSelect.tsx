@@ -2,6 +2,13 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import SelectPage from "../components/SelectPage";
 
+type Level = {
+  id: string;
+  title: string;
+  wordCount: number;
+  progress: number;
+};
+
 const levels = [
   { id: "N5", title: "N5", wordCount: 450, progress: 15 },
   { id: "N4", title: "N4", wordCount: 700, progress: 25 },
@@ -16,12 +23,13 @@ const LevelSelect: React.FC = () => {
   return (
     <SelectPage
       headerTitle="급수 선택"
-      headerExtra={<div className="text-lg">✿</div>} // 기존 장식 아이콘
+      headerExtra="✿"
       items={levels.map((level) => ({
         id: level.id,
         title: level.title,
-        description: `단어 수: ${level.wordCount}개 | 진도율: ${level.progress}%`,
+        description: `단어 수: ${level.wordCount}개\n진도율: ${level.progress}%`,
         onClick: () => navigate("/partSelect", { state: { level: level.id } }),
+        buttonClassName: "bg-sakura-dark text-white", // 버튼 색상 sakura
       }))}
     />
   );
