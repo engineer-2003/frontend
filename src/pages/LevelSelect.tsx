@@ -1,3 +1,4 @@
+// src/pages/LevelSelect.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import SelectPage from "../components/SelectPage";
@@ -9,7 +10,7 @@ type Level = {
   progress: number;
 };
 
-const levels = [
+const levels: Level[] = [
   { id: "N5", title: "N5", wordCount: 450, progress: 15 },
   { id: "N4", title: "N4", wordCount: 700, progress: 25 },
   { id: "N3", title: "N3", wordCount: 1000, progress: 50 },

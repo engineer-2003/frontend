@@ -1,3 +1,4 @@
+// src/pages/MainSelect.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import SelectPage from "../components/SelectPage";
@@ -16,7 +17,10 @@ const MainSelect: React.FC = () => {
       id: "pattern",
       title: "문형별 학습",
       description: `전체 문형 수: 250개\n진도율: 10%`,
-      onClick: () => navigate("/study"),
+      onClick: () => {
+        // 문형별 학습 - 임시로 N3 동사로 이동
+        navigate("/study?level=N3&part=동사");
+      },
     },
     {
       id: "history",
