@@ -114,7 +114,7 @@ export default function History() {
 
       <div className="w-full max-w-md bg-white rounded-t-3xl shadow p-6">
         <div className="flex flex-col items-center mb-6">
-          <div className="text-green-500 text-2xl mb-2">✿</div>
+          <div className="text-sakura text-2xl mb-2">✿</div>
           <h3 className="text-lg font-semibold text-gray-800">학습 활동</h3>
         </div>
 
