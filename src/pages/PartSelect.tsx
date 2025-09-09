@@ -1,17 +1,16 @@
 // src/pages/PartSelect.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SelectPage from "../components/SelectPage";
 
 type Part = {
   id: string;
   title: string;
-  backendValue: string; // 백엔드 API에서 사용하는 값
+  backendValue: string;
   wordCount: number;
   progress: number;
 };
 
-// 백엔드 API에서 사용하는 품사명으로 매핑
 const partData: Part[] = [
   { id: "noun", title: "명사", backendValue: "명사", wordCount: 120, progress: 20 },
   { id: "adj", title: "형용사", backendValue: "형용사", wordCount: 80, progress: 10 },
@@ -23,6 +22,22 @@ const PartSelect: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const level = location.state?.level;
+
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+    } else {
+      setIsAuthorized(true);
+    }
+  }, [navigate]);
+
+  if (!isAuthorized) {
+    return null; // 인증되지 않은 경우 아무것도 렌더링하지 않음
+  }
 
   if (!level) {
     return (
@@ -48,12 +63,8 @@ const PartSelect: React.FC = () => {
         id: part.id,
         title: part.title,
         description: `단어 수: ${part.wordCount}개\n진도율: ${part.progress}%`,
-        onClick: () => navigate("/study", { 
-          state: { 
-            level: level, // N5, N4, N3, N2, N1
-            partId: part.backendValue // 백엔드에서 사용하는 품사명
-          } 
-        }),
+        onClick: () => navigate("/study", { state: { level, partId: part.backendValue } }),
+        buttonClassName: "bg-sakura-dark text-white",
       }))}
     />
   );

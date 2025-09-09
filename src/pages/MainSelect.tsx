@@ -1,10 +1,27 @@
 // src/pages/MainSelect.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SelectPage from "../components/SelectPage";
 
 const MainSelect: React.FC = () => {
   const navigate = useNavigate();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+    } else {
+      setIsAuthorized(true);
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    alert("로그아웃되었습니다.");
+    navigate("/login");
+  };
 
   const items = [
     {
@@ -18,8 +35,7 @@ const MainSelect: React.FC = () => {
       title: "문형별 학습",
       description: `전체 문형 수: 250개\n진도율: 10%`,
       onClick: () => {
-        // 문형별 학습 - 임시로 N3 동사로 이동
-        navigate("/study?level=N3&part=동사");
+        navigate("/study", { state: { level: "N3", partId: "동사" } });
       },
     },
     {
@@ -30,10 +46,22 @@ const MainSelect: React.FC = () => {
     },
   ];
 
+  if (!isAuthorized) {
+    return null; // 인증되지 않은 경우 아무것도 렌더링하지 않음
+  }
+
   return (
     <SelectPage
       headerTitle="나의 학습"
-      headerExtra="✿"
+      headerExtra={
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 transition"
+        >
+          로그아웃
+        </button>
+      }
+      showBackButton={false}
       items={items}
     />
   );
