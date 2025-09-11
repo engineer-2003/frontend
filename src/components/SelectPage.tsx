@@ -8,6 +8,8 @@ type SelectItem = {
   description?: string;
   onClick: () => void;
   buttonClassName?: string;
+  customContent?: React.ReactNode; // 커스텀 버튼 영역
+  hideDefaultButton?: boolean; // 기본 "선택하기" 버튼 숨김 여부
 };
 
 interface SelectPageProps {
@@ -64,16 +66,24 @@ const SelectPage: React.FC<SelectPageProps> = ({
           <div key={item.id} className={`${index < items.length - 1 ? 'mb-6' : ''}`}>
             <h2 className="text-lg font-semibold">{item.title}</h2>
             {item.description && (
-              <p className="whitespace-pre-line text-gray-600 text-sm mb-2">{item.description}</p>
+              <p className="whitespace-pre-line text-gray-600 text-sm mb-3">{item.description}</p>
             )}
-            <button
-              onClick={item.onClick}
-              className={`px-4 py-2 rounded-lg text-sm transition ${
-                item.buttonClassName || "bg-sakura-dark text-white hover:bg-sakura-darker"
-              }`}
-            >
-              선택하기
-            </button>
+            
+            {/* 커스텀 콘텐츠가 있으면 그것을 사용, 없으면 기본 버튼 */}
+            {item.customContent ? (
+              item.customContent
+            ) : (
+              !item.hideDefaultButton && (
+                <button
+                  onClick={item.onClick}
+                  className={`px-4 py-2 rounded-lg text-sm transition ${
+                    item.buttonClassName || "bg-sakura-dark text-white hover:bg-sakura-darker"
+                  }`}
+                >
+                  선택하기
+                </button>
+              )
+            )}
           </div>
         ))}
       </div>
