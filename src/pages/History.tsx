@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+// src/pages/History.tsx
+import React, { useEffect, useState } from "react";
 import { CheckCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface StudyRecord {
   studyDate: string;
@@ -10,38 +12,73 @@ interface StudyRecord {
 }
 
 export default function History() {
+  const navigate = useNavigate();
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [records, setRecords] = useState<StudyRecord[]>([]);
   const [totalTime, setTotalTime] = useState(0);
   const [weekStats, setWeekStats] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) return;
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+    } else {
+      setIsAuthorized(true);
 
-    const { userId, token } = JSON.parse(userData);
+      fetch(`http://localhost:8080/api/study-records`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error('API 요청 실패');
+          }
+          return res.json();
+        })
+        .then((data: StudyRecord[]) => {
+          //  학습 기록을 날짜 기준으로 최신순 정렬
+          const sortedData = data.sort((a, b) => new Date(b.studyDate).getTime() - new Date(a.studyDate).getTime());
+          
+          // 학습 활동 리스트에는 정렬된 모든 데이터를 저장
+          setRecords(sortedData);
 
-    fetch(`http://localhost:8080/api/study-records/${userId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`, // ✅ JWT 전송
-      },
-    })
-      .then((res) => res.json())
-      .then((data: StudyRecord[]) => {
-        setRecords(data);
+          // 주간 통계에는 최근 7일치 데이터만 필터링해서 사용
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const sevenDaysAgo = new Date(today);
+          sevenDaysAgo.setDate(today.getDate() - 6);
 
-        // 총 학습 시간
-        const total = data.reduce((sum, r) => sum + r.studyTime, 0);
-        setTotalTime(total);
+          const recentRecordsForStats = sortedData.filter(r => {
+            const recordDate = new Date(r.studyDate + 'T00:00:00');
+            return recordDate >= sevenDaysAgo && recordDate <= today;
+          });
 
-        // 요일별 학습 시간 집계
-        const stats = [0, 0, 0, 0, 0, 0, 0];
-        data.forEach((r) => {
-          const day = new Date(r.studyDate).getDay();
-          stats[day] += r.studyTime;
+          const total = recentRecordsForStats.reduce((sum, r) => sum + r.studyTime, 0);
+          setTotalTime(total);
+
+          const stats = [0, 0, 0, 0, 0, 0, 0];
+          recentRecordsForStats.forEach(r => {
+            const localDate = new Date(r.studyDate + 'T00:00:00');
+            const dayOfWeek = localDate.getDay();
+            stats[dayOfWeek] += r.studyTime;
+          });
+          setWeekStats(stats);
+        })
+        .catch(error => {
+          console.error(error);
+          alert("학습 기록을 불러오는 데 실패했습니다.");
         });
-        setWeekStats(stats);
-      });
-  }, []);
+    }
+  }, [navigate]);
+  
+  const days = ["일", "월", "화", "수", "목", "금", "토"];
+
+  if (!isAuthorized) {
+    return null;
+  }
 
   const formatTime = (minutes: number) => {
     const h = Math.floor(minutes / 60);
@@ -49,33 +86,24 @@ export default function History() {
     return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
   };
 
-  const days = ["일", "월", "화", "수", "목", "금", "토"];
-
-  const maxTime = Math.max(...weekStats, 1); // ✅ 0 방지용
+  const maxTime = Math.max(...weekStats, 1);
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gray-50">
-      <div className="w-80 bg-white rounded-2xl shadow p-6 mt-10 mb-8">
-        <h3 className="text-center text-gray-600 text-sm mb-2">총 학습 시간</h3>
-        <p className="text-center text-2xl font-bold text-gray-900 mb-4">
-          {formatTime(totalTime)}
-        </p>
-
-        <div className="flex items-end justify-between h-24">
-          {weekStats.map((value, i) => {
-            const height = (value / maxTime) * 100;
-            const alpha = 0.3 + (value / maxTime) * 0.7; // ✅ 진하기 (0.3~1)
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-6 mb-4">
+        <h2 className="text-xl font-bold text-center mb-4">학습 기록</h2>
+        <div className="text-center text-lg mb-2">총 학습 시간: <span className="text-sakura-dark font-semibold">{formatTime(totalTime)}</span></div>
+        
+        <h3 className="text-lg font-semibold mt-4 mb-2">주간 학습 통계</h3>
+        <div className="flex justify-around items-end h-32">
+          {weekStats.map((time, i) => {
+            const height = (time / maxTime) * 100;
+            const barHeight = Math.max(height, 1); 
             return (
-              <div
-                key={i}
-                className="flex flex-col items-center h-full justify-end"
-              >
-                <div
-                  className="w-4 rounded"
-                  style={{
-                    height: `${height}%`,
-                    backgroundColor: `rgba(34,197,94,${alpha})`, // green-500 + alpha
-                  }}
+              <div key={i} className="flex flex-col items-center h-full justify-end">
+                <div 
+                  className="bg-sakura-light w-4 rounded-t-lg transition-all duration-300" 
+                  style={{ height: `${barHeight}%` }}
                 ></div>
                 <span className="text-xs mt-1">{days[i]}</span>
               </div>
@@ -84,16 +112,16 @@ export default function History() {
         </div>
       </div>
 
-      <div className="w-full bg-white rounded-t-3xl shadow p-6">
+      <div className="w-full max-w-md bg-white rounded-t-3xl shadow p-6">
         <div className="flex flex-col items-center mb-6">
-          <div className="text-green-500 text-2xl mb-2">✿</div>
+          <div className="text-sakura text-2xl mb-2">✿</div>
           <h3 className="text-lg font-semibold text-gray-800">학습 활동</h3>
         </div>
 
         <ul className="space-y-4 text-sm">
-          {records.map((r, i) => {
-            const dateObj = new Date(r.studyDate);
-            const dayName = days[dateObj.getDay()];
+          {records.slice(0, 5).map((r, i) => {
+            const localDate = new Date(r.studyDate + 'T00:00:00');
+            const dayName = days[localDate.getDay()];
             return (
               <li
                 key={i}
@@ -101,7 +129,6 @@ export default function History() {
               >
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="w-5 h-5 text-green-500" />
-                  {/* 날짜 + 요일 표시 */}
                   <span className="text-gray-700">
                     {r.studyDate} ({dayName})
                   </span>

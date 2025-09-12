@@ -14,19 +14,13 @@ export default function Login() {
         body: JSON.stringify({ username, password }),
       });
 
-    if (response.ok) {
-        const data = await response.json();
-
-        // ✅ 유저 정보 + JWT 토큰 저장
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            userId: data.userId,
-            username: data.username,
-            token: data.token, // 백엔드에서 발급한 JWT
-          })
-        );
-
+      if (response.ok) {
+        // JWT 토큰을 직접 문자열로 받음
+        const token = await response.text();
+        
+        // 로컬 스토리지에 토큰만 저장
+        localStorage.setItem("token", token);
+        
         alert("로그인 성공!");
         navigate("/mainSelect");
       } else {

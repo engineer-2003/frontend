@@ -1,5 +1,5 @@
 // src/pages/LevelSelect.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SelectPage from "../components/SelectPage";
 
@@ -20,6 +20,21 @@ const levels: Level[] = [
 
 const LevelSelect: React.FC = () => {
   const navigate = useNavigate();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+    } else {
+      setIsAuthorized(true);
+    }
+  }, [navigate]);
+
+  if (!isAuthorized) {
+    return null; // 인증되지 않은 경우 아무것도 렌더링하지 않음
+  }
 
   return (
     <SelectPage
@@ -30,7 +45,7 @@ const LevelSelect: React.FC = () => {
         title: level.title,
         description: `단어 수: ${level.wordCount}개\n진도율: ${level.progress}%`,
         onClick: () => navigate("/partSelect", { state: { level: level.id } }),
-        buttonClassName: "bg-sakura-dark text-white", // 버튼 색상 sakura
+        buttonClassName: "bg-sakura-dark text-white",
       }))}
     />
   );

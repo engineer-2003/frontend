@@ -1,5 +1,5 @@
 // src/pages/PartSelect.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SelectPage from "../components/SelectPage";
 
@@ -12,7 +12,6 @@ type Part = {
   hasConjugation: boolean; // 활용형 학습 가능 여부
 };
 
-// 백엔드 API에서 사용하는 품사명으로 매핑
 const partData: Part[] = [
   { id: "noun", title: "명사", backendValue: "명사", wordCount: 120, progress: 20, hasConjugation: false },
   { id: "adj", title: "형용사", backendValue: "형용사", wordCount: 80, progress: 10, hasConjugation: true },
@@ -24,6 +23,22 @@ const PartSelect: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const level = location.state?.level;
+
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+    } else {
+      setIsAuthorized(true);
+    }
+  }, [navigate]);
+
+  if (!isAuthorized) {
+    return null; // 인증되지 않은 경우 아무것도 렌더링하지 않음
+  }
 
   if (!level) {
     return (

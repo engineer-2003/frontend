@@ -14,7 +14,7 @@ type SelectItem = {
 
 interface SelectPageProps {
   headerTitle: string;
-  headerExtra?: React.ReactNode; // (예: 로그아웃 버튼, 아이콘 등)
+  headerExtra?: React.ReactNode;
   headerLayout?: 'row' | 'col';
   items: SelectItem[];
   showBackButton?: boolean; // 뒤로가기 버튼 표시 여부
@@ -49,11 +49,7 @@ const SelectPage: React.FC<SelectPageProps> = ({
         {/* headerExtra */}
         {headerExtra && (
           <div
-            className={`${
-              typeof headerExtra === 'string'
-                ? 'mt-2' // 제목 아래로 자연스럽게
-                : 'absolute right-4 top-1/2 transform -translate-y-1/2' // 버튼은 오른쪽 끝
-            }`}
+            className={`absolute right-4 top-1/2 transform -translate-y-1/2`}
           >
             {headerExtra}
           </div>
