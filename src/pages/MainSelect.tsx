@@ -56,7 +56,7 @@ const MainSelect: React.FC = () => {
       headerExtra={
         <button
           onClick={handleLogout}
-          className="px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 transition"
+          className="px-4 py-2 text-sm text-white bg-sakura-dark rounded-lg hover:bg-sakura-darker transition"
         >
           로그아웃
         </button>
