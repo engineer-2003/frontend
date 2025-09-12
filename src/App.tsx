@@ -5,7 +5,8 @@ import Signup from "./pages/SignUp";
 import MainSelect from "./pages/MainSelect";
 import LevelSelect from "./pages/LevelSelect";
 import PartSelect from "./pages/PartSelect";
-import Study from "./pages/Study";
+import SentenceStudy from "./pages/SentenceStudy";
+import ConjugationStudy from "./pages/ConjugationStudy";
 import History from "./pages/History";
 
 export default function App() {
@@ -17,7 +18,8 @@ export default function App() {
       <Route path="/mainSelect" element={<MainSelect />} />
       <Route path="/levelSelect" element={<LevelSelect />} />
       <Route path="/partSelect" element={<PartSelect />} />
-      <Route path="/study" element={<Study />} />
+      <Route path="/study/sentence" element={<SentenceStudy />} />
+      <Route path="/study/conjugation" element={<ConjugationStudy />} />
       <Route path="/history" element={<History />} />
     </Routes>
   );
