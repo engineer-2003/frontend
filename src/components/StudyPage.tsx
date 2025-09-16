@@ -23,7 +23,9 @@ interface StudyPageProps {
   onPrevious: () => void;
   showNavigationButtons?: boolean;
   additionalInfo?: React.ReactNode;
-  showHints?: boolean; // 힌트 표시 여부를 제어하는 props 추가
+  showHints?: boolean;
+  currentWordId?: number; // 현재 단어 ID 추가
+  onAnswerResult?: (wordId: number, isCorrect: boolean) => void; // 정답 결과 콜백 추가
 }
 
 const StudyPage: React.FC<StudyPageProps> = ({
@@ -38,7 +40,9 @@ const StudyPage: React.FC<StudyPageProps> = ({
   onPrevious,
   showNavigationButtons = true,
   additionalInfo,
-  showHints = true, // 기본값은 true (기존 동작 유지)
+  showHints = true,
+  currentWordId,
+  onAnswerResult,
 }) => {
   const navigate = useNavigate();
   const [answer, setAnswer] = useState("");
@@ -53,6 +57,11 @@ const StudyPage: React.FC<StudyPageProps> = ({
     try {
       const result = await onCheckAnswer(answer.trim());
       setCheckResult(result);
+      
+      // 정답 결과를 상위 컴포넌트에 전달
+      if (onAnswerResult && currentWordId) {
+        onAnswerResult(currentWordId, result.correct);
+      }
     } catch (error) {
       alert("정답 확인 중 오류가 발생했습니다.");
     }
@@ -116,7 +125,6 @@ const StudyPage: React.FC<StudyPageProps> = ({
               checkResult.correct ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             }`}>
               <div className="font-semibold">{checkResult.message}</div>
-              {/* 힌트는 showHints가 true이고, 틀렸을 때만 표시 */}
               {showHints && !checkResult.correct && checkResult.hint && (
                 <div className="text-sm mt-2">{checkResult.hint}</div>
               )}
