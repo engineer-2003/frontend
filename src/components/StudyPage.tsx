@@ -85,18 +85,36 @@ const StudyPage: React.FC<StudyPageProps> = ({
     }
   };
 
+  // 진행률 계산
+  const progressPercentage = ((currentIndex + 1) / totalCount) * 100;
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center">
       {/* Header */}
-      <div className="w-full bg-white rounded-b-3xl py-4 px-6 flex justify-between items-center shadow">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-gray-500 text-sm"
-        >
-          〈 학습 화면
-        </button>
-        <div className="text-sm text-gray-500">
-          {currentIndex + 1} / {totalCount}
+      <div className="w-full bg-white rounded-b-3xl py-4 px-6 shadow">
+        <div className="flex justify-between items-center mb-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-gray-500 text-sm"
+          >
+            〈 학습 화면
+          </button>
+          <div className="text-sm text-gray-500">
+            {currentIndex + 1} / {totalCount}
+          </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+          <div 
+            className="bg-sakura-dark h-2 rounded-full transition-all duration-300 ease-out"
+            style={{ width: `${progressPercentage}%` }}
+          ></div>
+        </div>
+        
+        {/* Progress Percentage */}
+        <div className="text-xs text-gray-500 text-center">
+          진행률: {Math.round(progressPercentage)}%
         </div>
       </div>
 

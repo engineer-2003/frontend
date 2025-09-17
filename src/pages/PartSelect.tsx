@@ -132,7 +132,7 @@ const PartSelect: React.FC = () => {
                       partId: part.backendValue
                     }
                   })}
-                  className="flex-1 px-3 py-2 bg-sakura-dark text-white rounded-lg hover:bg-sakura-darker transition text-sm"
+                  className="flex-1 px-3 py-2 bg-sakura text-branch rounded-lg hover:bg-sakura-darker transition text-sm"
                 >
                   예문 학습
                 </button>
@@ -146,7 +146,7 @@ const PartSelect: React.FC = () => {
                         retryMode: true
                       }
                     })}
-                    className="flex-1 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm"
+                    className="flex-1 px-3 py-2 bg-red-400 text-white rounded-lg hover:bg-red-600 transition text-sm"
                   >
                     재학습 ({counts.sentence}개)
                   </button>
@@ -163,7 +163,7 @@ const PartSelect: React.FC = () => {
                         partId: part.backendValue
                       }
                     })}
-                    className="flex-1 px-3 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition text-sm"
+                    className="flex-1 px-3 py-2 bg-blue-300 text-white rounded-lg hover:bg-blue-500 transition text-sm"
                   >
                     활용형 학습
                   </button>
@@ -177,7 +177,7 @@ const PartSelect: React.FC = () => {
                           retryMode: true
                         }
                       })}
-                      className="flex-1 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm"
+                      className="flex-1 px-3 py-2 bg-red-400 text-white rounded-lg hover:bg-red-600 transition text-sm"
                     >
                       재학습 ({counts.conjugation}개)
                     </button>
