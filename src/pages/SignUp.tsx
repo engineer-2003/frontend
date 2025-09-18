@@ -6,6 +6,7 @@ export default function Signup() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState(""); // 이메일 상태 추가
 
   const handleSignup = async () => {
     if (password !== confirmPassword) {
@@ -17,7 +18,8 @@ export default function Signup() {
       const response = await fetch("http://localhost:8080/api/users/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        // 요청 본문에 이메일 정보 추가
+        body: JSON.stringify({ username, password, email }),
       });
 
       if (response.ok) {
@@ -46,6 +48,16 @@ export default function Signup() {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm mb-2">이메일</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full border-b border-branch focus:outline-none py-2 text-branch"
           />
         </div>
