@@ -23,7 +23,9 @@ interface StudyPageProps {
   onPrevious: () => void;
   showNavigationButtons?: boolean;
   additionalInfo?: React.ReactNode;
-  showHints?: boolean; // 힌트 표시 여부를 제어하는 props 추가
+  showHints?: boolean;
+  currentWordId?: number; // 현재 단어 ID 추가
+  onAnswerResult?: (wordId: number, isCorrect: boolean) => void; // 정답 결과 콜백 추가
 }
 
 const StudyPage: React.FC<StudyPageProps> = ({
@@ -38,7 +40,9 @@ const StudyPage: React.FC<StudyPageProps> = ({
   onPrevious,
   showNavigationButtons = true,
   additionalInfo,
-  showHints = true, // 기본값은 true (기존 동작 유지)
+  showHints = true,
+  currentWordId,
+  onAnswerResult,
 }) => {
   const navigate = useNavigate();
   const [answer, setAnswer] = useState("");
@@ -53,6 +57,11 @@ const StudyPage: React.FC<StudyPageProps> = ({
     try {
       const result = await onCheckAnswer(answer.trim());
       setCheckResult(result);
+      
+      // 정답 결과를 상위 컴포넌트에 전달
+      if (onAnswerResult && currentWordId) {
+        onAnswerResult(currentWordId, result.correct);
+      }
     } catch (error) {
       alert("정답 확인 중 오류가 발생했습니다.");
     }
@@ -76,18 +85,36 @@ const StudyPage: React.FC<StudyPageProps> = ({
     }
   };
 
+  // 진행률 계산
+  const progressPercentage = ((currentIndex + 1) / totalCount) * 100;
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center">
       {/* Header */}
-      <div className="w-full bg-white rounded-b-3xl py-4 px-6 flex justify-between items-center shadow">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-gray-500 text-sm"
-        >
-          〈 학습 화면
-        </button>
-        <div className="text-sm text-gray-500">
-          {currentIndex + 1} / {totalCount}
+      <div className="w-full bg-white rounded-b-3xl py-4 px-6 shadow">
+        <div className="flex justify-between items-center mb-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-gray-500 text-sm"
+          >
+            〈 학습 화면
+          </button>
+          <div className="text-sm text-gray-500">
+            {currentIndex + 1} / {totalCount}
+          </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+          <div 
+            className="bg-sakura-dark h-2 rounded-full transition-all duration-300 ease-out"
+            style={{ width: `${progressPercentage}%` }}
+          ></div>
+        </div>
+        
+        {/* Progress Percentage */}
+        <div className="text-xs text-gray-500 text-center">
+          진행률: {Math.round(progressPercentage)}%
         </div>
       </div>
 
@@ -116,7 +143,6 @@ const StudyPage: React.FC<StudyPageProps> = ({
               checkResult.correct ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             }`}>
               <div className="font-semibold">{checkResult.message}</div>
-              {/* 힌트는 showHints가 true이고, 틀렸을 때만 표시 */}
               {showHints && !checkResult.correct && checkResult.hint && (
                 <div className="text-sm mt-2">{checkResult.hint}</div>
               )}
