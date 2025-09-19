@@ -72,6 +72,14 @@ export default function Login() {
         >
           로그인
         </button>
+        
+        {/* 비밀번호 찾기 버튼 */}
+        <button
+          className="w-full py-2 mt-4 text-branch text-sm hover:underline"
+          onClick={() => navigate('/findPassword')}
+        >
+          비밀번호 찾기
+        </button>
       </div>
     </div>
   );
