@@ -1,7 +1,9 @@
 // src/pages/ConjugationStudy.tsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import StudyPageComponent from "../components/StudyPage";
+import { useStudySession } from "../hooks/useStudySession";
+import { useWordsFetch } from "../hooks/useWordsFetch";
 
 interface WordDto {
   id: number;
@@ -45,266 +47,37 @@ const ConjugationStudy: React.FC = () => {
   const partId = location.state?.partId || "동사";
   const isRetryMode = location.state?.retryMode || false;
 
-  const [words, setWords] = useState<WordDto[]>([]);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentFormIndex, setCurrentFormIndex] = useState(0);
   const [availableForms, setAvailableForms] = useState<string[]>([]);
   const [currentProblem, setCurrentProblem] = useState<ConjugationProblem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>("");
   
-  // 학습 세션 추적을 위한 상태
-  const [sessionId, setSessionId] = useState<number | null>(null);
-  const [studyResults, setStudyResults] = useState<Map<number, boolean>>(new Map());
-  const sessionStartTime = useRef<Date>(new Date());
-  const studiedWords = useRef<Set<number>>(new Set());
-  const sessionEnded = useRef<boolean>(false);
+  // 세션 시작 여부를 추적
+  const sessionStartedRef = useRef(false);
 
-  // 학습 세션 시작
-  const startStudySession = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+  // 커스텀 훅 사용
+  const studySession = useStudySession({
+    level,
+    partId,
+    studyType: "conjugation",
+    isRetryMode,
+  });
 
-      console.log("학습 세션 시작 요청:", {
-        level,
-        part: partId,
-        studyType: "conjugation",
-        isRetrySession: isRetryMode,
-      });
+  // 활용형이 있는 단어만 필터링 - useCallback으로 메모이제이션
+  const filterConjugatableWords = useCallback((wordsData: WordDto[]) => {
+    return wordsData.filter(word => word.forms && Object.keys(word.forms).length > 0);
+  }, []);
 
-      const response = await fetch("http://localhost:8080/study/session/start", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          level,
-          part: partId,
-          studyType: "conjugation",
-          isRetrySession: isRetryMode,
-        }),
-      });
+  const { words, loading, error } = useWordsFetch({
+    level,
+    partId,
+    studyType: "conjugation",
+    isRetryMode,
+    filterWords: filterConjugatableWords,
+  });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log("학습 세션 시작 성공:", data);
-        setSessionId(data.sessionId);
-        sessionStartTime.current = new Date();
-        sessionEnded.current = false;
-      } else {
-        console.error("학습 세션 시작 실패:", response.status);
-      }
-    } catch (error) {
-      console.error("학습 세션 시작 실패:", error);
-    }
-  };
-
-  // 학습 세션 정상 종료 (완료 시)
-  const endStudySession = async () => {
-    if (!sessionId || sessionEnded.current) {
-      console.log("세션 종료 스킵:", { sessionId, sessionEnded: sessionEnded.current });
-      return;
-    }
-
-    sessionEnded.current = true;
-
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.warn("토큰 없음 - 세션 종료 불가");
-        return;
-      }
-
-      const correctCount = Array.from(studyResults.values()).filter(result => result).length;
-      const totalCount = studiedWords.current.size;
-
-      console.log("학습 세션 종료 시도:", {
-        sessionId,
-        correctCount,
-        totalCount,
-        studyResults: Array.from(studyResults.entries())
-      });
-
-      const studyResultsArray = Array.from(studyResults.entries()).map(([wordId, isCorrect]) => ({
-        wordId,
-        isCorrect,
-        studyType: "conjugation",
-      }));
-
-      const payload = {
-        correctCount,
-        incorrectCount: totalCount - correctCount,
-        totalCount,
-        studyResults: studyResultsArray,
-      };
-
-      console.log("세션 종료 페이로드:", payload);
-
-      const response = await fetch(`http://localhost:8080/study/session/${sessionId}/end`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log("학습 세션 종료 완료:", responseData);
-      } else {
-        const errorText = await response.text();
-        console.error("학습 세션 종료 실패:", {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText
-        });
-      }
-    } catch (error) {
-      console.error("학습 세션 종료 실패:", error);
-    }
-  };
-
-  // 학습 세션 강제 종료 (뒤로가기 시)
-  const closeStudySession = async () => {
-    if (!sessionId || sessionEnded.current) {
-      console.log("세션 강제 종료 스킵:", { sessionId, sessionEnded: sessionEnded.current });
-      return;
-    }
-
-    sessionEnded.current = true;
-
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.warn("토큰 없음 - 세션 강제 종료 불가");
-        return;
-      }
-
-      console.log("학습 세션 강제 종료 시도:", { sessionId });
-
-      const response = await fetch(`http://localhost:8080/study/session/${sessionId}/close`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log("학습 세션 강제 종료 완료:", responseData);
-      } else {
-        const errorText = await response.text();
-        console.error("학습 세션 강제 종료 실패:", {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText
-        });
-      }
-    } catch (error) {
-      console.error("학습 세션 강제 종료 실패:", error);
-    }
-  };
-
-  // beforeunload 이벤트 핸들러 (동기적 처리)
-  const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-    if (sessionId && !sessionEnded.current) {
-      const token = localStorage.getItem("token");
-      if (token) {
-        // Beacon API를 사용한 비동기 요청으로 강제 종료
-        if (navigator.sendBeacon) {
-          const url = `http://localhost:8080/study/session/${sessionId}/close?authToken=${encodeURIComponent(token)}`;
-          const blob = new Blob(['{}'], { type: 'application/json' });
-          navigator.sendBeacon(url, blob);
-          console.log("Beacon으로 학습 세션 강제 종료 요청 전송");
-        }
-        
-        sessionEnded.current = true;
-      }
-    }
-  };
-
-  // 단어 목록 가져오기
-  useEffect(() => {
-    const fetchWords = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("token");
-        
-        let endpoint = `http://localhost:8080/study?level=${level}&part=${partId}`;
-        
-        if (isRetryMode && token) {
-          endpoint = `http://localhost:8080/study/incorrect?level=${level}&part=${partId}&studyType=conjugation`;
-        }
-        
-        const headers: HeadersInit = {};
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-        
-        const response = await fetch(endpoint, { headers });
-        
-        if (!response.ok) {
-          throw new Error('단어 목록을 가져오는데 실패했습니다.');
-        }
-        
-        const wordsData: WordDto[] = await response.json();
-        
-        if (wordsData.length === 0) {
-          if (isRetryMode) {
-            setError("재학습할 틀린 단어가 없습니다. 모든 문제를 정답으로 맞추셨네요! 🎉");
-          } else {
-            setError("해당 조건에 맞는 단어가 없습니다.");
-          }
-          return;
-        }
-        
-        const conjugatableWords = wordsData.filter(word => 
-          word.forms && Object.keys(word.forms).length > 0
-        );
-
-        if (conjugatableWords.length === 0) {
-          if (isRetryMode) {
-            setError("재학습할 활용형 문제가 없습니다.");
-          } else {
-            setError("활용형 학습이 가능한 단어가 없습니다.");
-          }
-          return;
-        }
-        
-        setWords(conjugatableWords);
-        
-        const firstWordForms = Object.keys(conjugatableWords[0].forms);
-        setAvailableForms(firstWordForms);
-        setCurrentFormIndex(0);
-        
-        await loadProblem(conjugatableWords[0].id, firstWordForms[0]);
-        await startStudySession();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWords();
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      
-      if (!sessionEnded.current) {
-        closeStudySession();
-      }
-    };
-  }, [level, partId, isRetryMode]);
-
-  // 문제 로드
-  const loadProblem = async (wordId: number, formType?: string) => {
+  // 문제 로드 함수를 useCallback으로 메모이제이션
+  const loadProblem = useCallback(async (wordId: number, formType?: string) => {
     try {
       const url = formType 
         ? `http://localhost:8080/study/${wordId}/form-problem?formType=${formType}`
@@ -322,10 +95,32 @@ const ConjugationStudy: React.FC = () => {
       console.error("활용형 문제 로드 중 오류:", err);
       setCurrentProblem(null);
     }
-  };
+  }, []);
 
-  // 정답 확인
-  const handleCheckAnswer = async (answer: string): Promise<CheckAnswerResponse> => {
+  // 첫 번째 단어 로드 및 세션 시작 - 한 번만 실행되도록 개선
+  useEffect(() => {
+    if (words.length > 0 && !sessionStartedRef.current) {
+      sessionStartedRef.current = true;
+      
+      const firstWordForms = Object.keys(words[0].forms);
+      setAvailableForms(firstWordForms);
+      setCurrentFormIndex(0);
+      loadProblem(words[0].id, firstWordForms[0]);
+      
+      // 세션 시작
+      if (studySession.startStudySession) {
+        studySession.startStudySession();
+      }
+    }
+  }, [words, loadProblem, studySession.startStudySession]);
+
+  // words가 변경될 때 sessionStartedRef 리셋
+  useEffect(() => {
+    sessionStartedRef.current = false;
+  }, [level, partId, isRetryMode]);
+
+  // 정답 확인 함수를 useCallback으로 메모이제이션
+  const handleCheckAnswer = useCallback(async (answer: string): Promise<CheckAnswerResponse> => {
     if (!currentProblem) {
       throw new Error("문제가 로드되지 않았습니다.");
     }
@@ -352,44 +147,10 @@ const ConjugationStudy: React.FC = () => {
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : "정답 확인 중 오류가 발생했습니다.");
     }
-  };
-
-  // 정답 결과 처리
-  const handleAnswerResult = async (wordId: number, isCorrect: boolean) => {
-    setStudyResults(prev => new Map(prev).set(wordId, isCorrect));
-    studiedWords.current.add(wordId);
-
-    console.log("정답 결과 처리:", { wordId, isCorrect, totalStudied: studiedWords.current.size });
-
-    try {
-      const token = localStorage.getItem("token");
-      if (token) {
-        await fetch("http://localhost:8080/study/result", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            wordId,
-            isCorrect,
-            studyType: "conjugation",
-          }),
-        });
-      }
-    } catch (error) {
-      console.error("학습 결과 저장 실패:", error);
-    }
-  };
-
-  // 뒤로가기 버튼 클릭 시 세션 강제 종료 처리
-  const handleBackButtonClick = async () => {
-    console.log("뒤로가기 버튼 클릭 - 세션 강제 종료 시작");
-    await closeStudySession();
-  };
+  }, [currentProblem]);
 
   // 다음 활용형/단어로 이동
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (words.length === 0 || availableForms.length === 0) return;
 
     const currentWord = words[currentWordIndex];
@@ -408,10 +169,10 @@ const ConjugationStudy: React.FC = () => {
       setAvailableForms(nextWordForms);
       loadProblem(nextWord.id, nextWordForms[0]);
     }
-  };
+  }, [words, availableForms, currentWordIndex, currentFormIndex, loadProblem]);
 
   // 이전 활용형/단어로 이동
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (words.length === 0 || availableForms.length === 0) return;
 
     if (currentFormIndex > 0) {
@@ -430,17 +191,17 @@ const ConjugationStudy: React.FC = () => {
       setAvailableForms(prevWordForms);
       loadProblem(prevWord.id, prevWordForms[lastFormIndex]);
     }
-  };
+  }, [words, availableForms, currentWordIndex, currentFormIndex, loadProblem]);
 
-  // 전체 학습 항목 수 계산
-  const getTotalCount = () => {
+  // 전체 학습 항목 수 계산 - useCallback으로 메모이제이션
+  const getTotalCount = useCallback(() => {
     if (words.length === 0) return 0;
     const totalForms = words.reduce((sum, word) => sum + Object.keys(word.forms).length, 0);
     return totalForms;
-  };
+  }, [words]);
 
-  // 현재 진행 상황 계산
-  const getCurrentPosition = () => {
+  // 현재 진행 상황 계산 - useCallback으로 메모이제이션
+  const getCurrentPosition = useCallback(() => {
     if (words.length === 0) return 0;
     
     let position = 0;
@@ -450,7 +211,7 @@ const ConjugationStudy: React.FC = () => {
     position += currentFormIndex;
     
     return position;
-  };
+  }, [words, currentWordIndex, currentFormIndex]);
 
   if (loading) {
     return (
@@ -488,8 +249,6 @@ const ConjugationStudy: React.FC = () => {
     );
   }
 
-  const currentWord = words[currentWordIndex];
-
   return (
     <StudyPageComponent
       title={`${level} > ${partId}${isRetryMode ? " (재학습)" : ""}`}
@@ -501,8 +260,8 @@ const ConjugationStudy: React.FC = () => {
       onNext={handleNext}
       onPrevious={handlePrevious}
       currentWordId={currentProblem.id}
-      onAnswerResult={handleAnswerResult}
-      onBackButtonClick={handleBackButtonClick}
+      onAnswerResult={studySession.handleAnswerResult}
+      onBackButtonClick={studySession.handleBackButtonClick}
       showHints={false}
       additionalInfo={
         <div className="text-center">
