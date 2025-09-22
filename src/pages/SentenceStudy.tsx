@@ -54,12 +54,20 @@ const SentenceStudy: React.FC = () => {
   const [studyResults, setStudyResults] = useState<Map<number, boolean>>(new Map());
   const sessionStartTime = useRef<Date>(new Date());
   const studiedWords = useRef<Set<number>>(new Set());
+  const sessionEnded = useRef<boolean>(false);
 
   // 학습 세션 시작
   const startStudySession = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
+
+      console.log("학습 세션 시작 요청:", {
+        level,
+        part: partId,
+        studyType: "sentence",
+        isRetrySession: isRetryMode,
+      });
 
       const response = await fetch("http://localhost:8080/study/session/start", {
         method: "POST",
@@ -77,32 +85,58 @@ const SentenceStudy: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("학습 세션 시작 성공:", data);
         setSessionId(data.sessionId);
         sessionStartTime.current = new Date();
+        sessionEnded.current = false;
+      } else {
+        console.error("학습 세션 시작 실패:", response.status);
       }
     } catch (error) {
       console.error("학습 세션 시작 실패:", error);
     }
   };
 
-  // 학습 세션 종료
+  // 학습 세션 정상 종료 (완료 시)
   const endStudySession = async () => {
-    if (!sessionId) return;
+    if (!sessionId || sessionEnded.current) {
+      console.log("세션 종료 스킵:", { sessionId, sessionEnded: sessionEnded.current });
+      return;
+    }
+
+    sessionEnded.current = true;
 
     try {
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        console.warn("토큰 없음 - 세션 종료 불가");
+        return;
+      }
 
-      const studyTime = Math.floor((new Date().getTime() - sessionStartTime.current.getTime()) / (1000 * 60)); // 분 단위
       const correctCount = Array.from(studyResults.values()).filter(result => result).length;
-      const incorrectCount = studyResults.size - correctCount;
+      const totalCount = studiedWords.current.size;
 
-      // 개별 학습 결과 배열 생성
+      console.log("학습 세션 종료 시도:", {
+        sessionId,
+        correctCount,
+        totalCount,
+        studyResults: Array.from(studyResults.entries())
+      });
+
       const studyResultsArray = Array.from(studyResults.entries()).map(([wordId, isCorrect]) => ({
         wordId,
         isCorrect,
         studyType: "sentence",
       }));
+
+      const payload = {
+        correctCount,
+        incorrectCount: totalCount - correctCount,
+        totalCount,
+        studyResults: studyResultsArray,
+      };
+
+      console.log("세션 종료 페이로드:", payload);
 
       const response = await fetch(`http://localhost:8080/study/session/${sessionId}/end`, {
         method: "POST",
@@ -110,23 +144,86 @@ const SentenceStudy: React.FC = () => {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          correctCount,
-          incorrectCount,
-          totalCount: studiedWords.current.size,
-          studyResults: studyResultsArray,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        console.log("학습 세션 종료 완료");
+        const responseData = await response.json();
+        console.log("학습 세션 종료 완료:", responseData);
+      } else {
+        const errorText = await response.text();
+        console.error("학습 세션 종료 실패:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
       }
     } catch (error) {
       console.error("학습 세션 종료 실패:", error);
     }
   };
 
-  // 컴포넌트 마운트/언마운트 처리
+  // 학습 세션 강제 종료 (뒤로가기 시)
+  const closeStudySession = async () => {
+    if (!sessionId || sessionEnded.current) {
+      console.log("세션 강제 종료 스킵:", { sessionId, sessionEnded: sessionEnded.current });
+      return;
+    }
+
+    sessionEnded.current = true;
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("토큰 없음 - 세션 강제 종료 불가");
+        return;
+      }
+
+      console.log("학습 세션 강제 종료 시도:", { sessionId });
+
+      const response = await fetch(`http://localhost:8080/study/session/${sessionId}/close`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        console.log("학습 세션 강제 종료 완료:", responseData);
+      } else {
+        const errorText = await response.text();
+        console.error("학습 세션 강제 종료 실패:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
+      }
+    } catch (error) {
+      console.error("학습 세션 강제 종료 실패:", error);
+    }
+  };
+
+  // beforeunload 이벤트 핸들러 (동기적 처리)
+  const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    if (sessionId && !sessionEnded.current) {
+      const token = localStorage.getItem("token");
+      if (token) {
+        // Beacon API를 사용한 비동기 요청으로 강제 종료
+        if (navigator.sendBeacon) {
+          const url = `http://localhost:8080/study/session/${sessionId}/close?authToken=${encodeURIComponent(token)}`;
+          const blob = new Blob(['{}'], { type: 'application/json' });
+          navigator.sendBeacon(url, blob);
+          console.log("Beacon으로 학습 세션 강제 종료 요청 전송");
+        }
+        
+        sessionEnded.current = true;
+      }
+    }
+  };
+
+  // 단어 목록 가져오기
   useEffect(() => {
     const fetchWords = async () => {
       try {
@@ -135,7 +232,6 @@ const SentenceStudy: React.FC = () => {
         
         let endpoint = `http://localhost:8080/study?level=${level}&part=${partId}`;
         
-        // 재학습 모드인 경우 틀린 단어만 가져오기
         if (isRetryMode && token) {
           endpoint = `http://localhost:8080/study/incorrect?level=${level}&part=${partId}&studyType=sentence`;
         }
@@ -164,8 +260,6 @@ const SentenceStudy: React.FC = () => {
         
         setWords(wordsData);
         await loadProblem(wordsData[0].id);
-        
-        // 학습 세션 시작
         await startStudySession();
       } catch (err) {
         setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
@@ -176,16 +270,14 @@ const SentenceStudy: React.FC = () => {
 
     fetchWords();
 
-    // 페이지 떠날 때 세션 종료
-    const handleBeforeUnload = () => {
-      endStudySession();
-    };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      endStudySession();
+      
+      if (!sessionEnded.current) {
+        closeStudySession();
+      }
     };
   }, [level, partId, isRetryMode]);
 
@@ -220,7 +312,8 @@ const SentenceStudy: React.FC = () => {
         },
         body: JSON.stringify({
           answer: answer,
-          formType: ""
+          formType: "",
+          studyType: "sentence"
         }),
       });
 
@@ -237,11 +330,11 @@ const SentenceStudy: React.FC = () => {
 
   // 정답 결과 처리
   const handleAnswerResult = async (wordId: number, isCorrect: boolean) => {
-    // 학습 결과 저장
     setStudyResults(prev => new Map(prev).set(wordId, isCorrect));
     studiedWords.current.add(wordId);
 
-    // 서버에 개별 결과 저장
+    console.log("정답 결과 처리:", { wordId, isCorrect, totalStudied: studiedWords.current.size });
+
     try {
       const token = localStorage.getItem("token");
       if (token) {
@@ -261,6 +354,12 @@ const SentenceStudy: React.FC = () => {
     } catch (error) {
       console.error("학습 결과 저장 실패:", error);
     }
+  };
+
+  // 뒤로가기 버튼 클릭 시 세션 강제 종료 처리
+  const handleBackButtonClick = async () => {
+    console.log("뒤로가기 버튼 클릭 - 세션 강제 종료 시작");
+    await closeStudySession();
   };
 
   // 다음 단어
@@ -329,6 +428,7 @@ const SentenceStudy: React.FC = () => {
       onPrevious={handlePrevious}
       currentWordId={currentProblem.id}
       onAnswerResult={handleAnswerResult}
+      onBackButtonClick={handleBackButtonClick}
       additionalInfo={
         <div>
           {/* 한국어 의미 */}

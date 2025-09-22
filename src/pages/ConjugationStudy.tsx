@@ -58,12 +58,20 @@ const ConjugationStudy: React.FC = () => {
   const [studyResults, setStudyResults] = useState<Map<number, boolean>>(new Map());
   const sessionStartTime = useRef<Date>(new Date());
   const studiedWords = useRef<Set<number>>(new Set());
+  const sessionEnded = useRef<boolean>(false);
 
   // 학습 세션 시작
   const startStudySession = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
+
+      console.log("학습 세션 시작 요청:", {
+        level,
+        part: partId,
+        studyType: "conjugation",
+        isRetrySession: isRetryMode,
+      });
 
       const response = await fetch("http://localhost:8080/study/session/start", {
         method: "POST",
@@ -81,32 +89,58 @@ const ConjugationStudy: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("학습 세션 시작 성공:", data);
         setSessionId(data.sessionId);
         sessionStartTime.current = new Date();
+        sessionEnded.current = false;
+      } else {
+        console.error("학습 세션 시작 실패:", response.status);
       }
     } catch (error) {
       console.error("학습 세션 시작 실패:", error);
     }
   };
 
-  // 학습 세션 종료
+  // 학습 세션 정상 종료 (완료 시)
   const endStudySession = async () => {
-    if (!sessionId) return;
+    if (!sessionId || sessionEnded.current) {
+      console.log("세션 종료 스킵:", { sessionId, sessionEnded: sessionEnded.current });
+      return;
+    }
+
+    sessionEnded.current = true;
 
     try {
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        console.warn("토큰 없음 - 세션 종료 불가");
+        return;
+      }
 
-      const studyTime = Math.floor((new Date().getTime() - sessionStartTime.current.getTime()) / (1000 * 60)); // 분 단위
       const correctCount = Array.from(studyResults.values()).filter(result => result).length;
-      const incorrectCount = studyResults.size - correctCount;
+      const totalCount = studiedWords.current.size;
 
-      // 개별 학습 결과 배열 생성
+      console.log("학습 세션 종료 시도:", {
+        sessionId,
+        correctCount,
+        totalCount,
+        studyResults: Array.from(studyResults.entries())
+      });
+
       const studyResultsArray = Array.from(studyResults.entries()).map(([wordId, isCorrect]) => ({
         wordId,
         isCorrect,
         studyType: "conjugation",
       }));
+
+      const payload = {
+        correctCount,
+        incorrectCount: totalCount - correctCount,
+        totalCount,
+        studyResults: studyResultsArray,
+      };
+
+      console.log("세션 종료 페이로드:", payload);
 
       const response = await fetch(`http://localhost:8080/study/session/${sessionId}/end`, {
         method: "POST",
@@ -114,19 +148,82 @@ const ConjugationStudy: React.FC = () => {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          correctCount,
-          incorrectCount,
-          totalCount: studiedWords.current.size,
-          studyResults: studyResultsArray,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        console.log("학습 세션 종료 완료");
+        const responseData = await response.json();
+        console.log("학습 세션 종료 완료:", responseData);
+      } else {
+        const errorText = await response.text();
+        console.error("학습 세션 종료 실패:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
       }
     } catch (error) {
       console.error("학습 세션 종료 실패:", error);
+    }
+  };
+
+  // 학습 세션 강제 종료 (뒤로가기 시)
+  const closeStudySession = async () => {
+    if (!sessionId || sessionEnded.current) {
+      console.log("세션 강제 종료 스킵:", { sessionId, sessionEnded: sessionEnded.current });
+      return;
+    }
+
+    sessionEnded.current = true;
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("토큰 없음 - 세션 강제 종료 불가");
+        return;
+      }
+
+      console.log("학습 세션 강제 종료 시도:", { sessionId });
+
+      const response = await fetch(`http://localhost:8080/study/session/${sessionId}/close`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        console.log("학습 세션 강제 종료 완료:", responseData);
+      } else {
+        const errorText = await response.text();
+        console.error("학습 세션 강제 종료 실패:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
+      }
+    } catch (error) {
+      console.error("학습 세션 강제 종료 실패:", error);
+    }
+  };
+
+  // beforeunload 이벤트 핸들러 (동기적 처리)
+  const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    if (sessionId && !sessionEnded.current) {
+      const token = localStorage.getItem("token");
+      if (token) {
+        // Beacon API를 사용한 비동기 요청으로 강제 종료
+        if (navigator.sendBeacon) {
+          const url = `http://localhost:8080/study/session/${sessionId}/close?authToken=${encodeURIComponent(token)}`;
+          const blob = new Blob(['{}'], { type: 'application/json' });
+          navigator.sendBeacon(url, blob);
+          console.log("Beacon으로 학습 세션 강제 종료 요청 전송");
+        }
+        
+        sessionEnded.current = true;
+      }
     }
   };
 
@@ -139,7 +236,6 @@ const ConjugationStudy: React.FC = () => {
         
         let endpoint = `http://localhost:8080/study?level=${level}&part=${partId}`;
         
-        // 재학습 모드인 경우 틀린 단어만 가져오기
         if (isRetryMode && token) {
           endpoint = `http://localhost:8080/study/incorrect?level=${level}&part=${partId}&studyType=conjugation`;
         }
@@ -166,7 +262,6 @@ const ConjugationStudy: React.FC = () => {
           return;
         }
         
-        // 활용형이 있는 단어만 필터링
         const conjugatableWords = wordsData.filter(word => 
           word.forms && Object.keys(word.forms).length > 0
         );
@@ -182,14 +277,11 @@ const ConjugationStudy: React.FC = () => {
         
         setWords(conjugatableWords);
         
-        // 첫 번째 단어의 활용형 목록 설정
         const firstWordForms = Object.keys(conjugatableWords[0].forms);
         setAvailableForms(firstWordForms);
         setCurrentFormIndex(0);
         
         await loadProblem(conjugatableWords[0].id, firstWordForms[0]);
-        
-        // 학습 세션 시작
         await startStudySession();
       } catch (err) {
         setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
@@ -200,20 +292,18 @@ const ConjugationStudy: React.FC = () => {
 
     fetchWords();
 
-    // 페이지 떠날 때 세션 종료
-    const handleBeforeUnload = () => {
-      endStudySession();
-    };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      endStudySession();
+      
+      if (!sessionEnded.current) {
+        closeStudySession();
+      }
     };
   }, [level, partId, isRetryMode]);
 
-  // 문제 로드 (특정 활용형 지정)
+  // 문제 로드
   const loadProblem = async (wordId: number, formType?: string) => {
     try {
       const url = formType 
@@ -248,7 +338,8 @@ const ConjugationStudy: React.FC = () => {
         },
         body: JSON.stringify({
           answer: answer,
-          formType: currentProblem.formType
+          formType: currentProblem.formType,
+          studyType: "conjugation"
         }),
       });
 
@@ -265,11 +356,11 @@ const ConjugationStudy: React.FC = () => {
 
   // 정답 결과 처리
   const handleAnswerResult = async (wordId: number, isCorrect: boolean) => {
-    // 학습 결과 저장
     setStudyResults(prev => new Map(prev).set(wordId, isCorrect));
     studiedWords.current.add(wordId);
 
-    // 서버에 개별 결과 저장
+    console.log("정답 결과 처리:", { wordId, isCorrect, totalStudied: studiedWords.current.size });
+
     try {
       const token = localStorage.getItem("token");
       if (token) {
@@ -291,20 +382,23 @@ const ConjugationStudy: React.FC = () => {
     }
   };
 
+  // 뒤로가기 버튼 클릭 시 세션 강제 종료 처리
+  const handleBackButtonClick = async () => {
+    console.log("뒤로가기 버튼 클릭 - 세션 강제 종료 시작");
+    await closeStudySession();
+  };
+
   // 다음 활용형/단어로 이동
   const handleNext = () => {
     if (words.length === 0 || availableForms.length === 0) return;
 
     const currentWord = words[currentWordIndex];
     
-    // 현재 단어의 다음 활용형이 있는지 확인
     if (currentFormIndex + 1 < availableForms.length) {
-      // 같은 단어의 다음 활용형으로 이동
       const nextFormIndex = currentFormIndex + 1;
       setCurrentFormIndex(nextFormIndex);
       loadProblem(currentWord.id, availableForms[nextFormIndex]);
     } else {
-      // 다음 단어의 첫 번째 활용형으로 이동
       const nextWordIndex = (currentWordIndex + 1) % words.length;
       const nextWord = words[nextWordIndex];
       const nextWordForms = Object.keys(nextWord.forms);
@@ -320,15 +414,12 @@ const ConjugationStudy: React.FC = () => {
   const handlePrevious = () => {
     if (words.length === 0 || availableForms.length === 0) return;
 
-    // 현재 단어의 이전 활용형이 있는지 확인
     if (currentFormIndex > 0) {
-      // 같은 단어의 이전 활용형으로 이동
       const prevFormIndex = currentFormIndex - 1;
       setCurrentFormIndex(prevFormIndex);
       const currentWord = words[currentWordIndex];
       loadProblem(currentWord.id, availableForms[prevFormIndex]);
     } else {
-      // 이전 단어의 마지막 활용형으로 이동
       const prevWordIndex = currentWordIndex === 0 ? words.length - 1 : currentWordIndex - 1;
       const prevWord = words[prevWordIndex];
       const prevWordForms = Object.keys(prevWord.forms);
@@ -341,7 +432,7 @@ const ConjugationStudy: React.FC = () => {
     }
   };
 
-  // 전체 학습 항목 수 계산 (단어 수 × 평균 활용형 수)
+  // 전체 학습 항목 수 계산
   const getTotalCount = () => {
     if (words.length === 0) return 0;
     const totalForms = words.reduce((sum, word) => sum + Object.keys(word.forms).length, 0);
@@ -353,11 +444,9 @@ const ConjugationStudy: React.FC = () => {
     if (words.length === 0) return 0;
     
     let position = 0;
-    // 이전 단어들의 활용형 수 합계
     for (let i = 0; i < currentWordIndex; i++) {
       position += Object.keys(words[i].forms).length;
     }
-    // 현재 단어의 현재 활용형 위치 추가
     position += currentFormIndex;
     
     return position;
@@ -413,10 +502,10 @@ const ConjugationStudy: React.FC = () => {
       onPrevious={handlePrevious}
       currentWordId={currentProblem.id}
       onAnswerResult={handleAnswerResult}
-      showHints={false} // 활용형 연습에서는 힌트를 표시하지 않음
+      onBackButtonClick={handleBackButtonClick}
+      showHints={false}
       additionalInfo={
         <div className="text-center">
-          {/* 기본형 단어 */}
           <div className="bg-sakura-lighter rounded-lg p-4 mb-4">
             <div className="text-2xl font-bold text-gray-800 mb-2">
               {currentProblem.word}
@@ -428,7 +517,6 @@ const ConjugationStudy: React.FC = () => {
               {currentProblem.meaning}
             </div>
             
-            {/* 활용형 진행 상황 표시 */}
             <div className="text-sm text-gray-600">
               <div className="mb-2">현재 활용형: <span className="font-semibold text-sakura-dark">{currentProblem.formName}</span></div>
               <div className="flex justify-center space-x-1">
