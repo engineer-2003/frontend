@@ -24,8 +24,9 @@ interface StudyPageProps {
   showNavigationButtons?: boolean;
   additionalInfo?: React.ReactNode;
   showHints?: boolean;
-  currentWordId?: number; // 현재 단어 ID 추가
-  onAnswerResult?: (wordId: number, isCorrect: boolean) => void; // 정답 결과 콜백 추가
+  currentWordId?: number;
+  onAnswerResult?: (wordId: number, isCorrect: boolean) => void;
+  onBackButtonClick?: () => Promise<void>; // 뒤로가기 버튼 콜백 추가
 }
 
 const StudyPage: React.FC<StudyPageProps> = ({
@@ -43,10 +44,12 @@ const StudyPage: React.FC<StudyPageProps> = ({
   showHints = true,
   currentWordId,
   onAnswerResult,
+  onBackButtonClick,
 }) => {
   const navigate = useNavigate();
   const [answer, setAnswer] = useState("");
   const [checkResult, setCheckResult] = useState<CheckAnswerResponse | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const handleCheckAnswer = async () => {
     if (!answer.trim()) {
@@ -85,6 +88,29 @@ const StudyPage: React.FC<StudyPageProps> = ({
     }
   };
 
+  // 뒤로가기 버튼 핸들러 수정
+  const handleBackButton = async () => {
+    if (isNavigating) return; // 중복 클릭 방지
+    
+    setIsNavigating(true);
+    
+    try {
+      // 상위 컴포넌트의 뒤로가기 콜백이 있으면 실행 (세션 종료 등)
+      if (onBackButtonClick) {
+        await onBackButtonClick();
+      }
+      
+      // 네비게이션 실행
+      navigate(-1);
+    } catch (error) {
+      console.error("뒤로가기 처리 중 오류:", error);
+      // 오류가 발생해도 페이지는 이동
+      navigate(-1);
+    } finally {
+      setIsNavigating(false);
+    }
+  };
+
   // 진행률 계산
   const progressPercentage = ((currentIndex + 1) / totalCount) * 100;
 
@@ -94,10 +120,13 @@ const StudyPage: React.FC<StudyPageProps> = ({
       <div className="w-full bg-white rounded-b-3xl py-4 px-6 shadow">
         <div className="flex justify-between items-center mb-3">
           <button
-            onClick={() => navigate(-1)}
-            className="text-gray-500 text-sm"
+            onClick={handleBackButton}
+            disabled={isNavigating}
+            className={`text-gray-500 text-sm ${
+              isNavigating ? 'opacity-50 cursor-not-allowed' : 'hover:text-gray-700'
+            }`}
           >
-            〈 학습 화면
+            {isNavigating ? '처리 중...' : '〈 학습 화면'}
           </button>
           <div className="text-sm text-gray-500">
             {currentIndex + 1} / {totalCount}
