@@ -119,35 +119,25 @@ const ConjugationStudy: React.FC = () => {
     sessionStartedRef.current = false;
   }, [level, partId, isRetryMode]);
 
-  // 정답 확인 함수를 useCallback으로 메모이제이션
+  // 정답 확인 함수 - 세션 기반으로 수정
   const handleCheckAnswer = useCallback(async (answer: string): Promise<CheckAnswerResponse> => {
     if (!currentProblem) {
       throw new Error("문제가 로드되지 않았습니다.");
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/study/${currentProblem.id}/check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          answer: answer,
-          formType: currentProblem.formType,
-          studyType: "conjugation"
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('정답 확인에 실패했습니다.');
-      }
-
-      const result: CheckAnswerResponse = await response.json();
+      // 세션 기반 정답 확인 함수 사용
+      const result: CheckAnswerResponse = await studySession.checkAnswerWithSession(
+        currentProblem.id,
+        answer,
+        currentProblem.formType,
+        "conjugation"
+      );
       return result;
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : "정답 확인 중 오류가 발생했습니다.");
     }
-  }, [currentProblem]);
+  }, [currentProblem, studySession.checkAnswerWithSession]);
 
   // 다음 활용형/단어로 이동
   const handleNext = useCallback(() => {
