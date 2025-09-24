@@ -181,6 +181,40 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
     }
   };
 
+  // 정답 확인 함수 - 세션 ID 포함해서 전송
+  const checkAnswerWithSession = async (
+    wordId: number,
+    answer: string,
+    formType?: string,
+    studyType?: string
+  ) => {
+    try {
+      const response = await fetch(`http://localhost:8080/study/${wordId}/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(localStorage.getItem("token") && {
+            'Authorization': `Bearer ${localStorage.getItem("token")}`
+          })
+        },
+        body: JSON.stringify({
+          answer: answer,
+          formType: formType || "",
+          studyType: studyType || "sentence",
+          sessionId: sessionId?.toString() || "" // 세션 ID 추가
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('정답 확인에 실패했습니다.');
+      }
+
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  };
+
   // 정답 결과 처리
   const handleAnswerResult = async (wordId: number, isCorrect: boolean) => {
     setStudyResults(prev => new Map(prev).set(wordId, isCorrect));
@@ -237,5 +271,6 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
     closeStudySession,
     handleAnswerResult,
     handleBackButtonClick,
+    checkAnswerWithSession, // 새로운 정답 확인 함수 추가
   };
 };

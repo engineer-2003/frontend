@@ -1,5 +1,5 @@
 // src/pages/SentenceStudy.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import StudyPageComponent from "../components/StudyPage";
 import { useStudySession } from "../hooks/useStudySession";
@@ -47,6 +47,9 @@ const SentenceStudy: React.FC = () => {
 
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentProblem, setCurrentProblem] = useState<SentenceProblem | null>(null);
+  
+  // 세션 시작 여부를 추적
+  const sessionStartedRef = useRef(false);
 
   // 커스텀 훅 사용
   const studySession = useStudySession({
@@ -63,16 +66,8 @@ const SentenceStudy: React.FC = () => {
     isRetryMode,
   });
 
-  // 첫 번째 단어 로드 및 세션 시작
-  useEffect(() => {
-    if (words.length > 0) {
-      loadProblem(words[0].id);
-      studySession.startStudySession();
-    }
-  }, [words]);
-
-  // 문제 로드
-  const loadProblem = async (wordId: number) => {
+  // 문제 로드 함수
+  const loadProblem = useCallback(async (wordId: number) => {
     try {
       const response = await fetch(`http://localhost:8080/study/${wordId}/sentence-problem`);
       
@@ -86,55 +81,62 @@ const SentenceStudy: React.FC = () => {
       console.error("문제 로드 중 오류:", err);
       setCurrentProblem(null);
     }
-  };
+  }, []);
 
-  // 정답 확인
-  const handleCheckAnswer = async (answer: string): Promise<CheckAnswerResponse> => {
+  // 첫 번째 단어 로드 및 세션 시작 - 한 번만 실행되도록 개선
+  useEffect(() => {
+    if (words.length > 0 && !sessionStartedRef.current) {
+      sessionStartedRef.current = true;
+      
+      loadProblem(words[0].id);
+      
+      // 세션 시작
+      studySession.startStudySession();
+    }
+  }, [words, loadProblem, studySession]);
+
+  // words가 변경될 때 sessionStartedRef 리셋
+  useEffect(() => {
+    sessionStartedRef.current = false;
+  }, [level, partId, isRetryMode]);
+
+  // 정답 확인 함수 - 세션 기반으로 수정
+  const handleCheckAnswer = useCallback(async (answer: string): Promise<CheckAnswerResponse> => {
     if (!currentProblem) {
       throw new Error("문제가 로드되지 않았습니다.");
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/study/${currentProblem.id}/check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          answer: answer,
-          formType: "",
-          studyType: "sentence"
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('정답 확인에 실패했습니다.');
-      }
-
-      const result: CheckAnswerResponse = await response.json();
+      // 세션 기반 정답 확인 함수 사용
+      const result: CheckAnswerResponse = await studySession.checkAnswerWithSession(
+        currentProblem.id,
+        answer,
+        "", // 문장 학습에서는 formType 없음
+        "sentence"
+      );
       return result;
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : "정답 확인 중 오류가 발생했습니다.");
     }
-  };
+  }, [currentProblem, studySession]);
 
   // 다음 단어
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (words.length === 0) return;
 
     const nextIndex = (currentWordIndex + 1) % words.length;
     setCurrentWordIndex(nextIndex);
     loadProblem(words[nextIndex].id);
-  };
+  }, [words, currentWordIndex, loadProblem]);
 
   // 이전 단어
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (words.length === 0) return;
 
     const prevIndex = currentWordIndex === 0 ? words.length - 1 : currentWordIndex - 1;
     setCurrentWordIndex(prevIndex);
     loadProblem(words[prevIndex].id);
-  };
+  }, [words, currentWordIndex, loadProblem]);
 
   if (loading) {
     return (
