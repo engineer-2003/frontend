@@ -10,21 +10,23 @@ import ConjugationStudy from "./pages/ConjugationStudy";
 import History from "./pages/History";
 import FindPassword from './pages/FindPassword';
 import ResetPassword from './pages/ResetPassword'; 
+import Chatbot from "./pages/Chatbot";
 
 export default function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/mainSelect" element={<MainSelect />} />
-      <Route path="/levelSelect" element={<LevelSelect />} />
-      <Route path="/partSelect" element={<PartSelect />} />
-      <Route path="/study/sentence" element={<SentenceStudy />} />
-      <Route path="/study/conjugation" element={<ConjugationStudy />} />
-      <Route path="/history" element={<History />} />
-      <Route path="/findPassword" element={<FindPassword />} />
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/mainSelect" element={<MainSelect />} />
+      <Route path="/levelSelect" element={<LevelSelect />} />
+      <Route path="/partSelect" element={<PartSelect />} />
+      <Route path="/study/sentence" element={<SentenceStudy />} />
+      <Route path="/study/conjugation" element={<ConjugationStudy />} />
+      <Route path="/history" element={<History />} />
+      <Route path="/findPassword" element={<FindPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-    </Routes>
-  );
+      <Route path="/chatbot" element={<Chatbot />} />
+    </Routes>
+  );
 }

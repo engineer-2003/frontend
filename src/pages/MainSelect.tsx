@@ -1,24 +1,16 @@
 // src/pages/MainSelect.tsx
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import SelectPage from "../components/SelectPage";
 
 const MainSelect: React.FC = () => {
   const navigate = useNavigate();
-  const [isAuthorized, setIsAuthorized] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("로그인이 필요합니다.");
-      navigate("/login");
-    } else {
-      setIsAuthorized(true);
-    }
-  }, [navigate]);
+  
+  // 로그인 상태 확인 로직을 삭제했습니다.
+  // 이 페이지는 이제 라우팅 설정에 따라 토큰이 있을 때만 접근 가능합니다.
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("token"); // 로그아웃 시 토큰 삭제
     alert("로그아웃되었습니다.");
     navigate("/login");
   };
@@ -44,11 +36,13 @@ const MainSelect: React.FC = () => {
       description: `7일 연속 학습 중`,
       onClick: () => navigate("/history"),
     },
+    {
+      id: "chatbot",
+      title: "챗봇과 대화하기",
+      description: `궁금한 점을 바로 물어보세요!`,
+      onClick: () => navigate("/chatbot"),
+    },
   ];
-
-  if (!isAuthorized) {
-    return null; // 인증되지 않은 경우 아무것도 렌더링하지 않음
-  }
 
   return (
     <SelectPage
