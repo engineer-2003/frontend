@@ -1,3 +1,4 @@
+// src/pages/learning/History.tsx
 import React, { useEffect, useState } from "react";
 import { CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +25,7 @@ export default function History() {
     
     if (!token) {
       alert("로그인이 필요합니다.");
-      navigate("/login");
+      navigate("/user/login");
     } else {
       setIsAuthorized(true);
       fetchStudyRecords(token);
