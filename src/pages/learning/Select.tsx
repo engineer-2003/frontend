@@ -85,7 +85,6 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
       title: "문형별 학습",
       description: `전체 문형 수: 250개\n진도율: 10%`,
       onClick: () => {
-        // 문형별 학습 페이지가 없으므로 임시로 '문장 학습'으로 이동 (기존 MainSelect.tsx와 동일)
         navigate("/learning/study", { state: { level: "N3", partId: "동사", studyType: "sentence" } }); 
       },
     },
@@ -94,6 +93,13 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
       title: "학습 기록 확인",
       description: `7일 연속 학습 중`,
       onClick: () => navigate("/learning/history"),
+    },
+    {
+      id: "chatbot",
+      title: "AI 챗봇과 대화하기",
+      description: "학습한 내용을 챗봇으로 확인하기",
+      onClick: () => navigate("/learning/chatbot"), // 챗봇 페이지 경로
+      buttonClassName: "bg-sakura-dark text-white", // 스타일
     },
   ];
 
@@ -118,7 +124,6 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
   );
 };
 
-// LevelSelectView
 const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = ({ navigate }) => {
   const [isAuthorized, setIsAuthorized] = useState(false);
 
@@ -152,7 +157,6 @@ const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = 
 };
 
 
-// PartSelectView
 const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; location: ReturnType<typeof useLocation> }> = ({ navigate, location }) => {
   const level = location.state?.level;
   
@@ -182,14 +186,12 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
 
     for (const part of partData) {
       try {
-        // 예문 학습 틀린 단어 개수
         const sentenceResponse = await fetch(
           `http://localhost:8080/study/incorrect/count?level=${level}&part=${part.backendValue}&studyType=sentence`,
           { headers: { "Authorization": `Bearer ${token}` } }
         );
         const sentenceData = await sentenceResponse.json();
 
-        // 활용형 학습 틀린 단어 개수 (동사/형용사만)
         let conjugationCount = 0;
         if (part.hasConjugation) {
           const conjugationResponse = await fetch(
@@ -214,7 +216,6 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
 
     setIncorrectCounts(counts);
     setLoading(false);
-    // if (!allFetchesSuccessful) { alert("일부 학습 정보를 불러오는 데 실패했습니다."); }
   }, [level]);
 
   if (!isAuthorized) {
@@ -258,14 +259,13 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
           description: `단어 수: ${part.wordCount}개\n진도율: ${part.progress}%`,
           customContent: (
             <div className="space-y-3">
-              {/* 예문 학습 버튼들 */}
               <div className="flex gap-2">
                 <button
                   onClick={() => navigate("/learning/study", {
                     state: {
                       level: level,
                       partId: part.backendValue,
-                      studyType: "sentence" // 통합된 Study.tsx에서 사용
+                      studyType: "sentence"
                     }
                   })}
                   className="flex-1 px-3 py-2 bg-sakura text-branch rounded-lg hover:bg-sakura-darker transition text-sm"
@@ -279,7 +279,7 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
                       state: {
                         level: level,
                         partId: part.backendValue,
-                        studyType: "sentence", // 통합된 Study.tsx에서 사용
+                        studyType: "sentence",
                         retryMode: true
                       }
                     })}
@@ -290,7 +290,6 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
                 )}
               </div>
 
-              {/* 활용형 학습 버튼들 (동사/형용사만) */}
               {part.hasConjugation && (
                 <div className="flex gap-2">
                   <button
@@ -298,7 +297,7 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
                       state: {
                         level: level,
                         partId: part.backendValue,
-                        studyType: "conjugation" // 통합된 Study.tsx에서 사용
+                        studyType: "conjugation"
                       }
                     })}
                     className="flex-1 px-3 py-2 bg-blue-300 text-white rounded-lg hover:bg-blue-500 transition text-sm"
@@ -312,7 +311,7 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
                         state: {
                           level: level,
                           partId: part.backendValue,
-                          studyType: "conjugation", // 통합된 Study.tsx에서 사용
+                          studyType: "conjugation",
                           retryMode: true
                         }
                       })}
@@ -333,13 +332,11 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
 };
 
 
-// Main Select Component
 const Select: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const currentPath = location.pathname;
 
-    // 현재 경로에 따라 뷰를 분기합니다.
     if (currentPath.endsWith("/select/main")) {
         return <MainSelectView navigate={navigate} />;
     }
