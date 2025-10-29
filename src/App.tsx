@@ -11,6 +11,7 @@ import ResetPassword from "./pages/user/ResetPassword";
 import Select from "./pages/learning/Select"; // MainSelect, LevelSelect, PartSelect 통합
 import Study from "./pages/learning/Study"; // SentenceStudy, ConjugationStudy 통합
 import History from "./pages/learning/History"; // 이동
+import Chatbot from './pages/learning/Chatbot'; //챗봇 
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
       <Route path="/select/main" element={<Select />} />
       <Route path="/select/level" element={<Select />} />
       <Route path="/select/part" element={<Select />} />
+      <Route path="/learning/chatbot" element={<Chatbot />} />
 
       {/* Study Route (Sentence/Conjugation 통합) */}
       <Route path="/learning/study" element={<Study />} />
