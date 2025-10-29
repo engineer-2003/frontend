@@ -15,7 +15,7 @@ export default function Home() {
       <div className="flex flex-col space-y-4 w-48">
         {/* 로그인 버튼 */}
         <button
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/user/login")}
           className="w-full py-2 rounded-lg bg-sakura-dark text-white font-medium hover:bg-sakura-darker transition"
         >
           로그인
@@ -23,7 +23,7 @@ export default function Home() {
 
         {/* 회원가입 버튼 */}
         <button
-          onClick={() => navigate("/signup")}
+          onClick={() => navigate("/user/signup")}
           className="w-full py-2 rounded-lg border border-sakura-dark text-sakura-dark font-medium hover:bg-sakura-darker hover:text-white transition"
         >
           회원 가입
