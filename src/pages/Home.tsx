@@ -27,19 +27,19 @@ export default function Home() {
 
         {/* 버튼 그룹 */}
         <div className="flex flex-col space-y-4 w-64 animate-fade-in">
-          {/* 로그인 버튼 - 카카오톡 스타일 */}
+          {/* 로그인 버튼 - 그라데이션 */}
           <button
             onClick={() => navigate("/user/login")}
-            className="group relative w-full py-4 rounded-2xl bg-sakura-dark text-white font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 transition-all duration-200 overflow-hidden"
+            className="group relative w-full py-4 rounded-2xl bg-gradient-to-r from-sakura to-sakura-dark text-white font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 transition-all duration-200 overflow-hidden"
           >
             <span className="relative z-10">로그인</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-sakura-darker to-sakura-dark opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-sakura-dark to-sakura-darker opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
           </button>
 
-          {/* 회원가입 버튼 - 카카오톡 스타일 */}
+          {/* 회원가입 버튼 - 그라데이션 테두리 효과 */}
           <button
             onClick={() => navigate("/user/signup")}
-            className="group relative w-full py-4 rounded-2xl bg-white border-2 border-sakura-dark text-sakura-dark font-semibold text-lg shadow-md hover:shadow-lg hover:bg-sakura-dark hover:text-white transform hover:-translate-y-1 active:translate-y-0 transition-all duration-200"
+            className="group relative w-full py-4 rounded-2xl bg-white border-2 border-sakura-dark text-sakura-dark font-semibold text-lg shadow-md hover:shadow-lg hover:bg-gradient-to-r hover:from-sakura hover:to-sakura-dark hover:text-white hover:border-transparent transform hover:-translate-y-1 active:translate-y-0 transition-all duration-200"
           >
             <span className="relative z-10">회원 가입</span>
           </button>
