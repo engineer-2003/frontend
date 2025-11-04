@@ -31,11 +31,9 @@ export default function Login() {
     }
   };
 
-  // Google 로그인 핸들러
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        // 1. Google로부터 사용자 정보 가져오기
         const userInfo = await axios.get(
           'https://www.googleapis.com/oauth2/v3/userinfo',
           { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
@@ -43,7 +41,6 @@ export default function Login() {
 
         const { email } = userInfo.data;
 
-        // 2. 백엔드 서버에 이메일 전송하여 로그인/회원가입 처리
         const response = await fetch("http://localhost:8080/api/users/login/google", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -70,71 +67,158 @@ export default function Login() {
   });
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-sakura-lighter">
-      <div className="mb-10 flex flex-col items-center">
-        <div className="text-sakura text-5xl mb-3">✿</div>
-        <h2 className="text-2xl font-bold text-branch">로그인</h2>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-sakura-lighter to-sakura-light overflow-hidden py-12">
+      {/* 배경 장식 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="animate-float-slow absolute top-20 left-10 text-sakura text-4xl opacity-20">✿</div>
+        <div className="animate-float-medium absolute bottom-32 right-20 text-sakura text-5xl opacity-15">✿</div>
       </div>
 
-      <div className="w-full max-w-md bg-white rounded-2xl shadow p-8">
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            아이디
-          </label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="아이디"
-            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
-          />
+      {/* 메인 컨텐츠 */}
+      <div className="relative z-10 w-full max-w-md px-6 animate-fade-in-up">
+        {/* 헤더 */}
+        <div className="text-center mb-12">
+          <div className="text-sakura text-6xl mb-6 animate-bounce-gentle">✿</div>
+          <h2 className="text-3xl font-bold text-branch mb-3">로그인</h2>
+          <p className="text-sm text-gray-600">하루의 일본어에 오신 것을 환영합니다</p>
         </div>
 
-        <div className="mb-8">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            비밀번호
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="비밀번호"
-            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
-          />
+        {/* 로그인 카드 */}
+        <div className="bg-white rounded-3xl shadow-xl p-8 backdrop-blur-sm bg-opacity-95 mb-8">
+          {/* 아이디 입력 */}
+          <div className="mb-6">
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              아이디
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="아이디를 입력하세요"
+              className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-sakura-dark focus:bg-white transition-all"
+            />
+          </div>
+
+          {/* 비밀번호 입력 */}
+          <div className="mb-8">
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              비밀번호
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="비밀번호를 입력하세요"
+              className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-sakura-dark focus:bg-white transition-all"
+            />
+          </div>
+
+          {/* 로그인 버튼 */}
+          <button
+            className="w-full py-4 bg-gradient-to-r from-sakura to-sakura-dark text-white font-bold text-lg rounded-xl hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 transition-all duration-200"
+            onClick={handleLogin}
+          >
+            로그인
+          </button>
+          
+          {/* 구분선 */}
+          <div className="my-6 flex items-center">
+            <div className="flex-grow border-t border-gray-300"></div>
+            <span className="mx-4 text-sm text-gray-500 font-medium">또는</span>
+            <div className="flex-grow border-t border-gray-300"></div>
+          </div>
+
+          {/* Google 로그인 버튼 */}
+          <button
+            className="w-full py-4 flex items-center justify-center bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-400 hover:shadow-md transition-all"
+            onClick={() => handleGoogleLogin()}
+          >
+            <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Google 계정으로 로그인
+          </button>
+
+          {/* 비밀번호 찾기 */}
+          <button
+            className="w-full py-3 mt-4 text-sakura-dark text-sm font-semibold hover:text-sakura-darker transition-colors"
+            onClick={() => navigate('/user/findPassword')}
+          >
+            비밀번호를 잊으셨나요?
+          </button>
+
+          {/* 회원가입 링크 */}
+          <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+            <span className="text-sm text-gray-600">아직 계정이 없으신가요? </span>
+            <button
+              className="text-sm text-sakura-dark font-bold hover:text-sakura-darker transition-colors"
+              onClick={() => navigate('/user/signup')}
+            >
+              회원가입
+            </button>
+          </div>
         </div>
-
-        <button
-          className="w-full py-2 bg-sakura-dark text-white rounded-md hover:bg-sakura-darker transition"
-          onClick={handleLogin}
-        >
-          로그인
-        </button>
-        
-        {/* 구분선 */}
-        <div className="my-6 flex items-center">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-4 text-sm text-gray-500">또는</span>
-          <div className="flex-grow border-t border-gray-300"></div>
-        </div>
-
-        {/* Google 로그인 버튼 */}
-        <button
-          className="w-full py-2 flex items-center justify-center bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
-          onClick={() => handleGoogleLogin()}
-        >
-          {/* 구글 로고 SVG 아이콘 */}
-          <svg className="w-4 h-4 mr-2" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-76.4 76.4c-24.1-23.4-57.2-37.9-96.5-37.9-78.2 0-141.8 63.6-141.8 141.8s63.6 141.8 141.8 141.8c86.4 0 122.9-66.2 127.8-102.1H248V261.8h239.2z"></path></svg>
-          Google 계정으로 로그인
-        </button>
-
-        {/* 비밀번호 찾기 버튼 */}
-        <button
-          className="w-full py-2 mt-4 text-branch text-sm hover:underline"
-          onClick={() => navigate('/user/findPassword')}
-        >
-          비밀번호 찾기
-        </button>
       </div>
+
+      {/* CSS 애니메이션 */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes bounceGentle {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes floatSlow {
+          0%, 100% {
+            transform: translateY(0) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-20px) rotate(10deg);
+          }
+        }
+
+        @keyframes floatMedium {
+          0%, 100% {
+            transform: translateY(0) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-30px) rotate(-15deg);
+          }
+        }
+
+        .animate-fade-in-up {
+          animation: fadeInUp 0.6s ease-out;
+        }
+
+        .animate-bounce-gentle {
+          animation: bounceGentle 2s ease-in-out infinite;
+        }
+
+        .animate-float-slow {
+          animation: floatSlow 6s ease-in-out infinite;
+        }
+
+        .animate-float-medium {
+          animation: floatMedium 5s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }

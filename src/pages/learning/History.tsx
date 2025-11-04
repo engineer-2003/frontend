@@ -8,8 +8,8 @@ interface StudyRecord {
   levelName: string;
   partOfSpeech: string;
   wordCount: number;
-  studyTime: number; // 초 단위
-  studyDuration: string; // "n시간 n분 n초" 형태
+  studyTime: number;
+  studyDuration: string;
 }
 
 export default function History() {
@@ -45,9 +45,6 @@ export default function History() {
       }
 
       const data: StudyRecord[] = await response.json();
-      console.log('학습 기록 데이터:', data);
-      
-      // 학습 기록을 날짜 기준으로 최신순 정렬
       const sortedData = data.sort((a, b) => new Date(b.studyDate).getTime() - new Date(a.studyDate).getTime());
       
       setRecords(sortedData);
@@ -69,28 +66,21 @@ export default function History() {
     sevenDaysAgo.setDate(today.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    // 최근 7일 데이터만 필터링
     const recentRecords = data.filter(record => {
       const recordDate = new Date(record.studyDate + 'T00:00:00');
       return recordDate >= sevenDaysAgo && recordDate <= today;
     });
 
-    console.log('최근 7일 학습 기록:', recentRecords);
-
-    // 총 학습 시간 계산 (초 단위)
     const totalSeconds = recentRecords.reduce((sum, record) => sum + record.studyTime, 0);
     setTotalTime(totalSeconds);
 
-    // 요일별 학습 시간 계산 (초 단위)
     const stats = [0, 0, 0, 0, 0, 0, 0];
-    
     recentRecords.forEach(record => {
       const recordDate = new Date(record.studyDate + 'T00:00:00');
       const dayOfWeek = recordDate.getDay();
       stats[dayOfWeek] += record.studyTime;
     });
     
-    console.log('주간 통계 (초 단위):', stats);
     setWeekStats(stats);
   };
   
@@ -103,12 +93,14 @@ export default function History() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg">학습 기록을 불러오는 중...</div>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-sakura-dark border-t-transparent mb-4"></div>
+          <div className="text-lg text-gray-600">학습 기록을 불러오는 중...</div>
+        </div>
       </div>
     );
   }
 
-  // 초를 시간 형태로 포맷팅
   const formatTime = (seconds: number): string => {
     if (seconds === 0) return "0초";
     
@@ -124,7 +116,6 @@ export default function History() {
     return parts.join(' ');
   };
 
-  // 차트용 시간 포맷팅 (분 단위로 표시)
   const formatChartTime = (seconds: number): string => {
     if (seconds === 0) return "";
     
@@ -149,99 +140,186 @@ export default function History() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center p-4">
-      {/* 주간 통계 섹션 */}
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-6 mb-4">
-        <h2 className="text-xl font-bold text-center mb-4">학습 기록</h2>
-        
-        <div className="text-center text-lg mb-4">
-          <div className="text-gray-600 mb-1">최근 7일 총 학습 시간</div>
-          <div className="text-2xl font-bold text-sakura-dark">
-            {formatTime(totalTime)}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      {/* 헤더 */}
+      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="relative flex items-center justify-center px-4 py-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute left-4 text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold text-gray-900">학습 기록</h1>
+        </div>
+      </div>
+
+      <div className="px-4 py-6 max-w-md mx-auto space-y-4">
+        {/* 주간 통계 카드 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 animate-fade-in">
+          <div className="text-center mb-6">
+            <div className="text-sm text-gray-600 mb-2">최근 7일 총 학습 시간</div>
+            <div className="text-3xl font-bold text-sakura-dark">
+              {formatTime(totalTime)}
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-sakura-lighter to-white rounded-xl p-4">
+            <h3 className="text-sm font-bold text-gray-700 mb-4 text-center">주간 학습 통계</h3>
+            <div className="flex justify-around items-end h-40">
+              {weekStats.map((timeInSeconds, index) => {
+                const height = maxTime > 0 ? (timeInSeconds / maxTime) * 100 : 0;
+                const barHeight = Math.max(height, timeInSeconds > 0 ? 8 : 2);
+                
+                return (
+                  <div 
+                    key={index} 
+                    className="flex flex-col items-center h-full justify-end animate-bar-grow"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    {timeInSeconds > 0 && (
+                      <div className="text-xs text-sakura-dark font-semibold mb-2">
+                        {formatChartTime(timeInSeconds)}
+                      </div>
+                    )}
+                    <div 
+                      className={`w-8 rounded-t-lg transition-all duration-500 shadow-sm ${
+                        timeInSeconds > 0 ? 'bg-gradient-to-t from-sakura to-sakura-dark' : 'bg-gray-200'
+                      }`}
+                      style={{ height: `${barHeight}%` }}
+                    />
+                    <span className="text-xs font-bold mt-3 text-gray-700">{days[index]}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
-        
-        <h3 className="text-lg font-semibold mt-4 mb-3 text-center">주간 학습 통계</h3>
-        <div className="flex justify-around items-end h-32 bg-gray-50 rounded-lg p-2">
-          {weekStats.map((timeInSeconds, index) => {
-            const height = maxTime > 0 ? (timeInSeconds / maxTime) * 100 : 0;
-            const barHeight = Math.max(height, timeInSeconds > 0 ? 5 : 1);
-            
-            return (
-              <div key={index} className="flex flex-col items-center h-full justify-end">
-                <div className="text-xs text-gray-600 mb-1">
-                  {timeInSeconds > 0 ? formatChartTime(timeInSeconds) : ''}
-                </div>
-                <div 
-                  className={`w-6 rounded-t-lg transition-all duration-300 ${
-                    timeInSeconds > 0 ? 'bg-sakura' : 'bg-gray-200'
-                  }`}
-                  style={{ height: `${barHeight}%` }}
-                />
-                <span className="text-xs mt-2 font-medium">{days[index]}</span>
+
+        {/* 학습 활동 목록 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900">학습 활동</h3>
+            <span className="text-sakura text-xl">✿</span>
+          </div>
+
+          {records.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-sakura text-5xl mb-4 opacity-30">✿</div>
+              <div className="text-gray-500">
+                아직 학습 기록이 없습니다.
+                <br />
+                첫 학습을 시작해보세요!
               </div>
-            );
-          })}
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {records.slice(0, 20).map((record, index) => {
+                const formattedDate = formatDate(record.studyDate);
+                
+                return (
+                  <li
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors animate-slide-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="flex items-center space-x-3 flex-1">
+                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center">
+                        <CheckCircle className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-gray-900 truncate">
+                          {formattedDate}
+                        </span>
+                        <span className="text-xs text-gray-600">
+                          {record.levelName} • {record.partOfSpeech}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right ml-3">
+                      <div className="text-sm font-bold text-gray-900">
+                        {record.wordCount}문제
+                      </div>
+                      <div className="text-xs text-sakura-dark font-semibold">
+                        {record.studyDuration || formatTime(record.studyTime)}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {records.length > 20 && (
+            <div className="text-center mt-4 pt-4 border-t border-gray-200">
+              <span className="text-sm text-gray-500">
+                총 {records.length}개의 학습 기록
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 학습 활동 목록 섹션 */}
-      <div className="w-full max-w-md bg-white rounded-t-3xl shadow p-6">
-        <div className="flex flex-col items-center mb-6">
-          <div className="text-sakura text-2xl mb-2">✿</div>
-          <h3 className="text-lg font-semibold text-gray-800">학습 활동</h3>
-        </div>
+      {/* CSS 애니메이션 */}
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
 
-        {records.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            아직 학습 기록이 없습니다.
-            <br />
-            첫 학습을 시작해보세요!
-          </div>
-        ) : (
-          <ul className="space-y-4 text-sm">
-            {records.slice(0, 20).map((record, index) => {
-              const formattedDate = formatDate(record.studyDate);
-              
-              return (
-                <li
-                  key={index}
-                  className="flex items-center justify-between border-b pb-3 last:border-b-0"
-                >
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <div className="flex flex-col">
-                      <span className="text-gray-800 font-medium text-sm">
-                        {formattedDate}
-                      </span>
-                      <span className="text-gray-600 text-xs">
-                        {record.levelName} • {record.partOfSpeech}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-gray-800 font-medium text-sm">
-                      {record.wordCount}문제
-                    </div>
-                    <div className="text-sakura-dark text-xs font-medium">
-                      {record.studyDuration || formatTime(record.studyTime)}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
 
-        {records.length > 20 && (
-          <div className="text-center mt-4">
-            <span className="text-gray-500 text-sm">
-              총 {records.length}개의 학습 기록
-            </span>
-          </div>
-        )}
-      </div>
+        @keyframes barGrow {
+          from {
+            transform: scaleY(0);
+            opacity: 0;
+          }
+          to {
+            transform: scaleY(1);
+            opacity: 1;
+          }
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.5s ease-out;
+        }
+
+        .animate-slide-in {
+          animation: slideIn 0.4s ease-out both;
+        }
+
+        .animate-bar-grow {
+          animation: barGrow 0.6s ease-out both;
+          transform-origin: bottom;
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+      `}</style>
     </div>
   );
-
 }
