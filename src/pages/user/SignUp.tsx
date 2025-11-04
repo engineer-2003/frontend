@@ -19,7 +19,6 @@ export default function Signup() {
       const response = await fetch("http://localhost:8080/api/users/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // 요청 본문에 이메일 정보 추가
         body: JSON.stringify({ username, password, email }),
       });
 
@@ -36,60 +35,167 @@ export default function Signup() {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-white">
-      <div className="w-full bg-sakura py-10 flex flex-col items-center text-white rounded-b-2xl">
-        <div className="text-3xl mb-3">✿</div>
-        <h2 className="text-xl font-bold text-branch">회원 가입 페이지</h2>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      {/* 헤더 */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="relative flex items-center justify-center px-4 py-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute left-4 text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold text-gray-900">회원가입</h1>
+        </div>
       </div>
 
-      <div className="w-80 mt-10 space-y-6">
-        <div>
-          <label className="block text-sm mb-2">아이디</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
-          />
+      {/* 메인 컨텐츠 */}
+      <div className="px-4 py-8 max-w-md mx-auto">
+        {/* 상단 장식 */}
+        <div className="text-center mb-8 animate-fade-in">
+          <div className="text-sakura text-6xl mb-3 animate-bounce-gentle">✿</div>
+          <h2 className="text-2xl font-bold text-branch mb-2">하루의 일본어</h2>
+          <p className="text-sm text-gray-600">새로운 계정을 만들어보세요</p>
         </div>
 
-        <div>
-          <label className="block text-sm mb-2">이메일</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
-          />
+        {/* 회원가입 카드 */}
+        <div className="bg-white rounded-3xl shadow-lg p-6 space-y-5 animate-slide-up">
+          {/* 아이디 입력 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              아이디
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="사용할 아이디를 입력하세요"
+              className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-sakura-dark focus:bg-white transition-all"
+            />
+          </div>
+
+          {/* 이메일 입력 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              이메일
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-sakura-dark focus:bg-white transition-all"
+            />
+          </div>
+
+          {/* 비밀번호 입력 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              비밀번호
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="6자 이상 입력하세요"
+              className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-sakura-dark focus:bg-white transition-all"
+            />
+          </div>
+
+          {/* 비밀번호 확인 입력 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              비밀번호 확인
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="비밀번호를 다시 입력하세요"
+              className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-sakura-dark focus:bg-white transition-all"
+            />
+            {password && confirmPassword && password !== confirmPassword && (
+              <p className="text-xs text-red-500 mt-2">비밀번호가 일치하지 않습니다</p>
+            )}
+            {password && confirmPassword && password === confirmPassword && (
+              <p className="text-xs text-green-500 mt-2">비밀번호가 일치합니다</p>
+            )}
+          </div>
+
+          {/* 회원가입 버튼 */}
+          <button
+            onClick={handleSignup}
+            className="w-full py-4 bg-gradient-to-r from-sakura to-sakura-dark text-white font-bold text-lg rounded-xl hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 transition-all duration-200 mt-6"
+          >
+            회원가입
+          </button>
+
+          {/* 로그인 링크 */}
+          <div className="pt-4 text-center border-t border-gray-200">
+            <span className="text-sm text-gray-600">이미 계정이 있으신가요? </span>
+            <button
+              className="text-sm text-sakura-dark font-bold hover:text-sakura-darker transition-colors"
+              onClick={() => navigate('/user/login')}
+            >
+              로그인
+            </button>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm mb-2">비밀번호</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
-          />
+        {/* 하단 안내 */}
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500">
+            회원가입 시 <span className="text-sakura-dark font-semibold">이용약관</span> 및{' '}
+            <span className="text-sakura-dark font-semibold">개인정보 처리방침</span>에 동의하게 됩니다
+          </p>
         </div>
-
-        <div>
-          <label className="block text-sm mb-2">비밀번호 확인</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full border-b border-branch focus:outline-none py-2 text-branch"
-          />
-        </div>
-
-        <button
-          onClick={handleSignup}
-          className="w-full py-3 bg-sakura-dark text-white rounded-md hover:bg-sakura-darker transition"
-        >
-          회원 가입
-        </button>
       </div>
+
+      {/* CSS 애니메이션 */}
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes bounceGentle {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.5s ease-out;
+        }
+
+        .animate-slide-up {
+          animation: slideUp 0.5s ease-out;
+        }
+
+        .animate-bounce-gentle {
+          animation: bounceGentle 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }

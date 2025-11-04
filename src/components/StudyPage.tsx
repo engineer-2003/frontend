@@ -26,7 +26,7 @@ interface StudyPageProps {
   showHints?: boolean;
   currentWordId?: number;
   onAnswerResult?: (wordId: number, isCorrect: boolean) => void;
-  onBackButtonClick?: () => Promise<void>; // 뒤로가기 버튼 콜백 추가
+  onBackButtonClick?: () => Promise<void>;
 }
 
 const StudyPage: React.FC<StudyPageProps> = ({
@@ -61,7 +61,6 @@ const StudyPage: React.FC<StudyPageProps> = ({
       const result = await onCheckAnswer(answer.trim());
       setCheckResult(result);
       
-      // 정답 결과를 상위 컴포넌트에 전달
       if (onAnswerResult && currentWordId) {
         onAnswerResult(currentWordId, result.correct);
       }
@@ -88,137 +87,247 @@ const StudyPage: React.FC<StudyPageProps> = ({
     }
   };
 
-  // 뒤로가기 버튼 핸들러 수정
   const handleBackButton = async () => {
-    if (isNavigating) return; // 중복 클릭 방지
+    if (isNavigating) return;
     
     setIsNavigating(true);
     
     try {
-      // 상위 컴포넌트의 뒤로가기 콜백이 있으면 실행 (세션 종료 등)
       if (onBackButtonClick) {
         await onBackButtonClick();
       }
-      
-      // 네비게이션 실행
       navigate(-1);
     } catch (error) {
       console.error("뒤로가기 처리 중 오류:", error);
-      // 오류가 발생해도 페이지는 이동
       navigate(-1);
     } finally {
       setIsNavigating(false);
     }
   };
 
-  // 진행률 계산
   const progressPercentage = ((currentIndex + 1) / totalCount) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
       {/* Header */}
-      <div className="w-full bg-white rounded-b-3xl py-4 px-6 shadow">
-        <div className="flex justify-between items-center mb-3">
-          <button
-            onClick={handleBackButton}
-            disabled={isNavigating}
-            className={`text-gray-500 text-sm ${
-              isNavigating ? 'opacity-50 cursor-not-allowed' : 'hover:text-gray-700'
-            }`}
-          >
-            {isNavigating ? '처리 중...' : '〈 학습 화면'}
-          </button>
-          <div className="text-sm text-gray-500">
-            {currentIndex + 1} / {totalCount}
+      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="px-4 py-3">
+          <div className="flex justify-between items-center mb-3">
+            <button
+              onClick={handleBackButton}
+              disabled={isNavigating}
+              className={`flex items-center space-x-1 text-gray-700 hover:text-gray-900 transition-colors ${
+                isNavigating ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="text-sm">{isNavigating ? '처리 중...' : '학습 화면'}</span>
+            </button>
+            <div className="text-sm font-semibold text-gray-900">
+              {currentIndex + 1} / {totalCount}
+            </div>
           </div>
-        </div>
-        
-        {/* Progress Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-          <div 
-            className="bg-sakura-dark h-2 rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${progressPercentage}%` }}
-          ></div>
-        </div>
-        
-        {/* Progress Percentage */}
-        <div className="text-xs text-gray-500 text-center">
-          진행률: {Math.round(progressPercentage)}%
+          
+          {/* Progress Bar */}
+          <div className="relative w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+            <div 
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-sakura to-sakura-dark rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progressPercentage}%` }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer"></div>
+            </div>
+          </div>
+          
+          {/* Progress Text */}
+          <div className="text-xs text-sakura-dark font-semibold text-center mt-2">
+            진행률: {Math.round(progressPercentage)}%
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-col items-center w-full max-w-md px-6 mt-6">
-        <h1 className="text-3xl font-bold mb-2">{title}</h1>
-        {subtitle && <div className="text-lg text-gray-600 mb-2">{subtitle}</div>}
-        <div className="text-sakura text-xl mb-6">✿</div>
-
-        <div className="bg-white rounded-2xl shadow-md w-full p-6 text-center">
-          {/* Question */}
-          <div className="mb-6">
-            <div className="text-lg font-semibold mb-4 text-gray-800">
-              {questionText}
-            </div>
-            {additionalInfo && (
-              <div className="mb-4">
-                {additionalInfo}
-              </div>
-            )}
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="max-w-md mx-auto">
+          {/* Title Section */}
+          <div className="text-center mb-6 animate-fade-in">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
+            {subtitle && <div className="text-base text-gray-600">{subtitle}</div>}
+            <div className="text-sakura text-3xl mt-2 animate-pulse-gentle">✿</div>
           </div>
 
-          {/* Result Display */}
-          {checkResult && (
-            <div className={`mb-4 p-3 rounded-lg ${
-              checkResult.correct ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-            }`}>
-              <div className="font-semibold">{checkResult.message}</div>
-              {showHints && !checkResult.correct && checkResult.hint && (
-                <div className="text-sm mt-2">{checkResult.hint}</div>
+          {/* Question Card */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 animate-slide-up">
+            {/* Question - 가운데 정렬 */}
+            <div className="mb-6">
+              <div className="text-base font-bold text-gray-900 mb-4 pb-3 border-b border-gray-200 text-center">
+                {questionText}
+              </div>
+              {additionalInfo && (
+                <div className="mb-4 text-center">
+                  {additionalInfo}
+                </div>
               )}
             </div>
-          )}
 
-          {/* Input */}
-          <div className="mb-4">
-            <input
-              type="text"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={placeholder}
-              className="w-full border-2 border-sakura-light focus:border-sakura-dark focus:outline-none px-4 py-3 rounded-lg text-center text-lg"
-              disabled={checkResult?.correct}
-            />
-          </div>
+            {/* Result Display */}
+            {checkResult && (
+              <div 
+                className={`mb-4 p-4 rounded-xl animate-bounce-in ${
+                  checkResult.correct 
+                    ? 'bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-300' 
+                    : 'bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-300'
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  {checkResult.correct ? (
+                    <>
+                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="font-bold text-green-800">정답입니다!</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span className="font-bold text-red-800">틀렸습니다</span>
+                    </>
+                  )}
+                </div>
+                <div className={`text-sm text-center ${checkResult.correct ? 'text-green-700' : 'text-red-700'}`}>
+                  {checkResult.message}
+                </div>
+                {showHints && !checkResult.correct && checkResult.hint && (
+                  <div className="text-sm mt-2 text-red-600 bg-white bg-opacity-50 p-2 rounded text-center">
+                    💡 {checkResult.hint}
+                  </div>
+                )}
+              </div>
+            )}
 
-          {/* Buttons */}
-          <div className="flex justify-between gap-2">
-            {showNavigationButtons && (
+            {/* Input */}
+            <div className="mb-4">
+              <input
+                type="text"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={placeholder}
+                className="w-full border-2 border-gray-200 focus:border-sakura-dark focus:outline-none px-4 py-4 rounded-xl text-center text-base transition-all"
+                disabled={checkResult?.correct}
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="space-y-2">
+              {/* 정답 확인 버튼 */}
               <button
-                onClick={handlePrevious}
-                className="w-[30%] px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-sm"
+                onClick={handleCheckAnswer}
+                disabled={!answer.trim() || checkResult?.correct}
+                className="w-full py-4 bg-gradient-to-r from-sakura to-sakura-dark text-white font-semibold rounded-xl hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                이전
+                {checkResult?.correct ? '✓ 정답 확인 완료' : '정답 확인'}
               </button>
-            )}
-            {showNavigationButtons && (
-              <button
-                onClick={handleNext}
-                className="w-[30%] px-3 py-2 bg-sakura-dark text-white rounded-lg hover:bg-sakura-darker transition text-sm"
-              >
-                다음
-              </button>
-            )}
-            <button
-              onClick={handleCheckAnswer}
-              disabled={!answer.trim() || checkResult?.correct}
-              className={`${showNavigationButtons ? 'w-[35%]' : 'w-full'} px-3 py-2 border border-sakura-dark text-sakura-dark rounded-lg hover:bg-sakura-darker hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed text-sm`}
-            >
-              정답 확인
-            </button>
+
+              {/* 네비게이션 버튼 */}
+              {showNavigationButtons && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePrevious}
+                    className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                  >
+                    ← 이전
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    className="flex-1 py-3 bg-gradient-to-r from-sakura to-sakura-dark text-white font-semibold rounded-xl hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                  >
+                    다음 →
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* CSS 애니메이션 */}
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes bounceIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          50% {
+            transform: scale(1.05);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes pulseGentle {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.7;
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.5s ease-out;
+        }
+
+        .animate-slide-up {
+          animation: slideUp 0.5s ease-out;
+        }
+
+        .animate-bounce-in {
+          animation: bounceIn 0.4s ease-out;
+        }
+
+        .animate-pulse-gentle {
+          animation: pulseGentle 2s ease-in-out infinite;
+        }
+
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+      `}</style>
     </div>
   );
 };
