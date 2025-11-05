@@ -1,3 +1,4 @@
+// src/pages/Home.tsx
 import { useNavigate } from "react-router-dom";
 
 export default function Home() {
@@ -26,7 +27,7 @@ export default function Home() {
         </div>
 
         {/* 버튼 그룹 */}
-        <div className="flex flex-col space-y-4 w-64 animate-fade-in">
+        <div className="flex flex-col space-y-4 w-64 animate-fade-in-08s">
           {/* 로그인 버튼 - 그라데이션 */}
           <button
             onClick={() => navigate("/user/login")}
@@ -50,112 +51,6 @@ export default function Home() {
           매일 조금씩, 일본어와 함께
         </p>
       </div>
-
-      {/* CSS 애니메이션을 위한 스타일 */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes bounceGentle {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-
-        @keyframes floatSlow {
-          0%, 100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-20px) rotate(10deg);
-          }
-        }
-
-        @keyframes floatMedium {
-          0%, 100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-30px) rotate(-15deg);
-          }
-        }
-
-        @keyframes floatFast {
-          0%, 100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-40px) rotate(20deg);
-          }
-        }
-
-        .animate-fade-in-up {
-          animation: fadeInUp 0.6s ease-out;
-        }
-
-        .animate-slide-down {
-          animation: slideDown 0.5s ease-out;
-        }
-
-        .animate-fade-in {
-          animation: fadeIn 0.8s ease-out 0.3s both;
-        }
-
-        .animate-fade-in-delayed {
-          animation: fadeIn 1s ease-out 0.6s both;
-        }
-
-        .animate-bounce-gentle {
-          animation: bounceGentle 2s ease-in-out infinite;
-        }
-
-        .animate-spin-slow:hover {
-          animation: spin 3s linear infinite;
-        }
-
-        .animate-float-slow {
-          animation: floatSlow 6s ease-in-out infinite;
-        }
-
-        .animate-float-medium {
-          animation: floatMedium 5s ease-in-out infinite;
-        }
-
-        .animate-float-fast {
-          animation: floatFast 4s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }

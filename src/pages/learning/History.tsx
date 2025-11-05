@@ -158,7 +158,7 @@ export default function History() {
 
       <div className="px-4 py-6 max-w-md mx-auto space-y-4">
         {/* 주간 통계 카드 */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 animate-fade-in">
+        <div className="bg-white rounded-2xl shadow-sm p-6 animate-fade-in-slide">
           <div className="text-center mb-6">
             <div className="text-sm text-gray-600 mb-2">최근 7일 총 학습 시간</div>
             <div className="text-3xl font-bold text-sakura-dark">
@@ -261,65 +261,6 @@ export default function History() {
           )}
         </div>
       </div>
-
-      {/* CSS 애니메이션 */}
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes barGrow {
-          from {
-            transform: scaleY(0);
-            opacity: 0;
-          }
-          to {
-            transform: scaleY(1);
-            opacity: 1;
-          }
-        }
-
-        .animate-fade-in {
-          animation: fadeIn 0.5s ease-out;
-        }
-
-        .animate-slide-in {
-          animation: slideIn 0.4s ease-out both;
-        }
-
-        .animate-bar-grow {
-          animation: barGrow 0.6s ease-out both;
-          transform-origin: bottom;
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
     </div>
   );
 }

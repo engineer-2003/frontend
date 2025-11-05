@@ -151,7 +151,7 @@ const StudyPage: React.FC<StudyPageProps> = ({
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-md mx-auto">
           {/* Title Section */}
-          <div className="text-center mb-6 animate-fade-in">
+          <div className="text-center mb-6 animate-fade-in-05s">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
             {subtitle && <div className="text-base text-gray-600">{subtitle}</div>}
             <div className="text-sakura text-3xl mt-2 animate-pulse-gentle">✿</div>
@@ -253,81 +253,6 @@ const StudyPage: React.FC<StudyPageProps> = ({
           </div>
         </div>
       </div>
-
-      {/* CSS 애니메이션 */}
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes bounceIn {
-          0% {
-            opacity: 0;
-            transform: scale(0.8);
-          }
-          50% {
-            transform: scale(1.05);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        @keyframes pulseGentle {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.7;
-          }
-        }
-
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fadeIn 0.5s ease-out;
-        }
-
-        .animate-slide-up {
-          animation: slideUp 0.5s ease-out;
-        }
-
-        .animate-bounce-in {
-          animation: bounceIn 0.4s ease-out;
-        }
-
-        .animate-pulse-gentle {
-          animation: pulseGentle 2s ease-in-out infinite;
-        }
-
-        .animate-shimmer {
-          animation: shimmer 2s infinite;
-        }
-      `}</style>
     </div>
   );
 };
