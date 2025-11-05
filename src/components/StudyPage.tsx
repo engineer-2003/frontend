@@ -151,6 +151,7 @@ const StudyPage: React.FC<StudyPageProps> = ({
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-md mx-auto">
           {/* Title Section */}
+          <div className="text-center mb-6 animate-fade-in-05s">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
             {subtitle && <div className="text-base text-gray-600">{subtitle}</div>}
             <div className="text-sakura text-3xl mt-2 animate-pulse-gentle">✿</div>

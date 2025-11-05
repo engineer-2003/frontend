@@ -158,6 +158,7 @@ export default function History() {
 
       <div className="px-4 py-6 max-w-md mx-auto space-y-4">
         {/* 주간 통계 카드 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 animate-fade-in-slide">
           <div className="text-center mb-6">
             <div className="text-sm text-gray-600 mb-2">최근 7일 총 학습 시간</div>
             <div className="text-3xl font-bold text-sakura-dark">

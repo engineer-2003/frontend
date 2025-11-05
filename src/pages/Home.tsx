@@ -27,6 +27,7 @@ export default function Home() {
         </div>
 
         {/* 버튼 그룹 */}
+        <div className="flex flex-col space-y-4 w-64 animate-fade-in-08s">
           {/* 로그인 버튼 - 그라데이션 */}
           <button
             onClick={() => navigate("/user/login")}
