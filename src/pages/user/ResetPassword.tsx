@@ -186,63 +186,6 @@ export default function ResetPassword() {
           </button>
         </div>
       </div>
-
-      {/* CSS 애니메이션 */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes bounceGentle {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-
-        @keyframes floatSlow {
-          0%, 100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-20px) rotate(10deg);
-          }
-        }
-
-        @keyframes floatMedium {
-          0%, 100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-30px) rotate(-15deg);
-          }
-        }
-
-        .animate-fade-in-up {
-          animation: fadeInUp 0.6s ease-out;
-        }
-
-        .animate-bounce-gentle {
-          animation: bounceGentle 2s ease-in-out infinite;
-        }
-
-        .animate-float-slow {
-          animation: floatSlow 6s ease-in-out infinite;
-        }
-
-        .animate-float-medium {
-          animation: floatMedium 5s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }

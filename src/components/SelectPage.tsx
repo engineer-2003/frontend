@@ -115,28 +115,6 @@ const SelectPage: React.FC<SelectPageProps> = ({
           ))}
         </div>
       </div>
-
-      {/* CSS 애니메이션 */}
-      <style>{`
-        @keyframes slideInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-slide-in-up {
-          animation: slideInUp 0.4s ease-out both;
-        }
-
-        .active\\:scale-98:active {
-          transform: scale(0.98);
-        }
-      `}</style>
     </div>
   );
 };

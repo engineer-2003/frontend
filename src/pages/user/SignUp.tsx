@@ -54,7 +54,6 @@ export default function Signup() {
       {/* 메인 컨텐츠 */}
       <div className="px-4 py-8 max-w-md mx-auto">
         {/* 상단 장식 */}
-        <div className="text-center mb-8 animate-fade-in">
           <div className="text-sakura text-6xl mb-3 animate-bounce-gentle">✿</div>
           <h2 className="text-2xl font-bold text-branch mb-2">하루의 일본어</h2>
           <p className="text-sm text-gray-600">새로운 계정을 만들어보세요</p>
@@ -152,50 +151,7 @@ export default function Signup() {
           </p>
         </div>
       </div>
-
       {/* CSS 애니메이션 */}
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes bounceGentle {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fadeIn 0.5s ease-out;
-        }
-
-        .animate-slide-up {
-          animation: slideUp 0.5s ease-out;
-        }
-
-        .animate-bounce-gentle {
-          animation: bounceGentle 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }

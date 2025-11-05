@@ -1,3 +1,4 @@
+// src/pages/learning/Chatbot.tsx
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -206,37 +207,6 @@ const Chatbot: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* CSS 애니메이션 */}
-      <style>{`
-        @keyframes messageAppear {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes bounceDot {
-          0%, 80%, 100% {
-            transform: translateY(0);
-          }
-          40% {
-            transform: translateY(-8px);
-          }
-        }
-
-        .animate-message-appear {
-          animation: messageAppear 0.3s ease-out;
-        }
-
-        .animate-bounce-dot {
-          animation: bounceDot 1.4s infinite ease-in-out;
-        }
-      `}</style>
     </div>
   );
 };
