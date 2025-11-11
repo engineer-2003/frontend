@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function FindPassword() {
+  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -16,7 +17,7 @@ export default function FindPassword() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:8080/api/users/find-password", {
+      const response = await fetch(`${BASE_API_URL}/api/users/find-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email }),

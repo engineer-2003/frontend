@@ -10,6 +10,7 @@ type Message = {
 };
 
 const Chatbot: React.FC = () => {
+  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -52,7 +53,7 @@ const Chatbot: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/chat', { 
+      const response = await fetch(`${BASE_API_URL}/api/chat`, { 
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

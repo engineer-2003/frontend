@@ -1,3 +1,199 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* --- Keyframes --- */
+
+/* 1. Simple Fade In (가장 기본적인 투명도 애니메이션) */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 2. Fade In Up (30px - 로그인/회원가입/홈 메인 콘텐츠) */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 3. Slide Down (20px - Home 제목) */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 4. Bounce Gentle (10px - 벚꽃 아이콘) */
+@keyframes bounceGentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* 5. Floating Petals (떠다니는 벚꽃) */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(10deg); }
+}
+@keyframes floatMedium {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(-15deg); }
+}
+@keyframes floatFast {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-40px) rotate(20deg); }
+}
+
+/* 6. Slide Up (20px - 카드/컨테이너) */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 7. Bounce In (Scale - 정답/오답 결과 박스) */
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  50% { transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* 8. Pulse Gentle (Opacity - StudyPage 벚꽃) */
+@keyframes pulseGentle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* 9. Shimmer (진행률 바 효과) */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* 10. Fade In Translate (10px Y-translate - History 항목, Chatbot 메시지) */
+@keyframes fadeInTranslate {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 11. Slide In (20px X-translate - History 목록 항목) */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* 12. Bar Grow (차트) */
+@keyframes barGrow {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+/* 13. Spin (로딩/호버) */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 14. Bounce Dot (챗봇 입력 중) */
+@keyframes bounceDot {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-8px); }
+}
+
+
+/* --- Animation Utility Classes --- */
+
+/* Home.tsx / Login.tsx / FindPassword.tsx / ResetPassword.tsx 공통 */
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.5s ease-out;
+}
+
+.animate-bounce-gentle {
+  animation: bounceGentle 2s ease-in-out infinite;
+}
+
+.animate-spin-slow:hover {
+  animation: spin 3s linear infinite;
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: floatMedium 5s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: floatFast 4s ease-in-out infinite;
+}
+
+/* Custom Fade-Ins with specific timings/delays (애니메이션 타이밍 충돌 해결) */
+
+/* Home.tsx 버튼 그룹 Fade (0.8s, 0.3s delay) - 기존 animate-fade-in을 대체 */
+.animate-fade-in-08s {
+  animation: fadeIn 0.8s ease-out 0.3s both;
+}
+/* Home.tsx 하단 텍스트 Fade (1s, 0.6s delay) */
+.animate-fade-in-delayed {
+  animation: fadeIn 1s ease-out 0.6s both;
+}
+
+/* StudyPage.tsx & SignUp.tsx Fade (0.5s, 딜레이 없음) - 기존 animate-fade-in을 대체 */
+.animate-fade-in-05s {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* History.tsx Fade-In (0.5s, 10px translate) - 기존 animate-fade-in을 대체 */
+.animate-fade-in-slide {
+  animation: fadeInTranslate 0.5s ease-out;
+}
+
+/* SelectPage.tsx / StudyPage.tsx / SignUp.tsx */
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out; /* StudyPage와 SignUp에서 사용 */
+}
+
+.animate-slide-in-up {
+  animation: slideUp 0.4s ease-out both; /* SelectPage에서 사용 */
+}
+
+.animate-bounce-in {
+  animation: bounceIn 0.4s ease-out;
+}
+
+.animate-pulse-gentle {
+  animation: pulseGentle 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* History.tsx */
+.animate-slide-in {
+  animation: slideIn 0.4s ease-out both;
+}
+
+.animate-bar-grow {
+  animation: barGrow 0.6s ease-out both;
+  transform-origin: bottom;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Chatbot.tsx */
+.animate-message-appear {
+  animation: fadeInTranslate 0.3s ease-out;
+}
+
+.animate-bounce-dot {
+  animation: bounceDot 1.4s infinite ease-in-out;
+}
+
+/* SelectPage.tsx의 Tailwind Hack 유지 */
+.active\\:scale-98:active {
+  transform: scale(0.98);
+}

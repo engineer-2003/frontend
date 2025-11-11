@@ -175,6 +175,7 @@ const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = 
 
 
 const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; location: ReturnType<typeof useLocation> }> = ({ navigate, location }) => {
+  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
   const level = location.state?.level;
   
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -203,7 +204,7 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
     for (const part of partData) {
       try {
         const sentenceResponse = await fetch(
-          `http://localhost:8080/study/incorrect/count?level=${level}&part=${part.backendValue}&studyType=sentence`,
+          `${BASE_API_URL}/study/incorrect/count?level=${level}&part=${part.backendValue}&studyType=sentence`,
           { headers: { "Authorization": `Bearer ${token}` } }
         );
         const sentenceData = await sentenceResponse.json();
@@ -211,7 +212,7 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
         let conjugationCount = 0;
         if (part.hasConjugation) {
           const conjugationResponse = await fetch(
-            `http://localhost:8080/study/incorrect/count?level=${level}&part=${part.backendValue}&studyType=conjugation`,
+            `${BASE_API_URL}/study/incorrect/count?level=${level}&part=${part.backendValue}&studyType=conjugation`,
             { headers: { "Authorization": `Bearer ${token}` } }
           );
           const conjugationData = await conjugationResponse.json();

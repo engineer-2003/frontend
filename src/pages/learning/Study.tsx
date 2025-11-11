@@ -1,9 +1,9 @@
 // src/pages/learning/Study.tsx
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import StudyPageComponent from "../../components/StudyPage"; // 경로 조정
-import { useStudySession } from "../../hooks/useStudySession"; // 경로 조정
-import { useWordsFetch } from "../../hooks/useWordsFetch"; // 경로 조정
+import StudyPageComponent from "../../components/StudyPage";
+import { useStudySession } from "../../hooks/useStudySession";
+import { useWordsFetch } from "../../hooks/useWordsFetch";
 
 // --- Type Definitions ---
 interface WordDto {
@@ -53,6 +53,7 @@ interface CheckAnswerResponse {
 }
 
 const Study: React.FC = () => {
+  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -102,10 +103,10 @@ const Study: React.FC = () => {
       let url;
       if (studyType === "conjugation") {
         url = formType 
-          ? `http://localhost:8080/study/${wordId}/form-problem?formType=${formType}`
-          : `http://localhost:8080/study/${wordId}/form-problem`;
+          ? `${BASE_API_URL}/study/${wordId}/form-problem?formType=${formType}`
+          : `${BASE_API_URL}/study/${wordId}/form-problem`;
       } else { // sentence
-        url = `http://localhost:8080/study/${wordId}/sentence-problem`;
+        url = `${BASE_API_URL}/study/${wordId}/sentence-problem`;
       }
         
       const response = await fetch(url);
