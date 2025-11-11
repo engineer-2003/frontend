@@ -166,7 +166,7 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
   };
 
   // beforeunload 이벤트 핸들러
-  const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  const handleBeforeUnload = (_event: BeforeUnloadEvent) => {
     if (sessionId && !sessionEnded.current) {
       const token = localStorage.getItem("token");
       if (token) {
@@ -272,6 +272,6 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
     closeStudySession,
     handleAnswerResult,
     handleBackButtonClick,
-    checkAnswerWithSession, // 새로운 정답 확인 함수 추가
+    checkAnswerWithSession,
   };
 };
