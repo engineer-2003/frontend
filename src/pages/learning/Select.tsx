@@ -82,27 +82,18 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
       buttonClassName: "bg-gradient-to-r from-sakura to-sakura-dark text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
     },
     {
-      id: "pattern",
-      title: "문형별 학습",
-      description: `전체 문형 수: 250개\n진도율: 10%`,
-      onClick: () => {
-        navigate("/learning/study", { state: { level: "N3", partId: "동사", studyType: "sentence" } }); 
-      },
-      buttonClassName: "bg-gradient-to-r from-sakura to-sakura-dark text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
-    },
-    {
       id: "history",
       title: "학습 기록 확인",
       description: `7일 연속 학습 중`,
       onClick: () => navigate("/learning/history"),
-      buttonClassName: "bg-gradient-to-r from-sakura to-sakura-dark text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
+      buttonClassName: "bg-gradient-to-r from-blue-400 to-blue-500 text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
     },
     {
       id: "chatbot",
       title: "AI 챗봇과 대화하기",
       description: "학습한 내용을 챗봇으로 확인하기",
       onClick: () => navigate("/learning/chatbot"),
-      buttonClassName: "bg-gradient-to-r from-sakura to-sakura-dark text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
+      buttonClassName: "bg-gradient-to-r from-green-400 to-green-500 text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
     },
   ];
 
@@ -162,13 +153,24 @@ const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = 
     <SelectPage
       headerTitle="급수 선택"
       headerExtra="✿"
-      items={levels.map((level) => ({
-        id: level.id,
-        title: level.title,
-        description: `단어 수: ${level.wordCount}개\n진도율: ${level.progress}%`,
-        onClick: () => navigate("/select/part", { state: { level: level.id } }),
-        buttonClassName: "bg-gradient-to-r from-sakura to-sakura-dark text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
-      }))}
+      items={levels.map((level, index) => {
+        // N5부터 N1까지 점점 진해지는 색상
+        const gradientColors = [
+          "from-sakura-lighter to-sakura-light",       // N5 - 가장 연함
+          "from-sakura-light to-sakura",               // N4
+          "from-sakura to-sakura-dark",                // N3
+          "from-sakura-dark to-sakura-darker",         // N2
+          "from-sakura-darker to-[#C04A5F]",           // N1 - 가장 진함
+        ];
+        
+        return {
+          id: level.id,
+          title: level.title,
+          description: `단어 수: ${level.wordCount}개\n진도율: ${level.progress}%`,
+          onClick: () => navigate("/select/part", { state: { level: level.id } }),
+          buttonClassName: `bg-gradient-to-r ${gradientColors[index]} text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0`,
+        };
+      })}
     />
   );
 };
