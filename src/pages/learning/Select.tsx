@@ -1,5 +1,5 @@
 // src/pages/learning/Select.tsx
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SelectPage from "../../components/SelectPage";
 
@@ -12,13 +12,6 @@ type SelectItem = {
   buttonClassName?: string;
   customContent?: React.ReactNode;
   hideDefaultButton?: boolean;
-};
-
-type Level = {
-  id: string;
-  title: string;
-  wordCount: number;
-  progress: number;
 };
 
 type Part = {
