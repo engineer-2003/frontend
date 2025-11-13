@@ -9,6 +9,7 @@ interface StudySessionParams {
 }
 
 export const useStudySession = ({ level, partId, studyType, isRetryMode }: StudySessionParams) => {
+  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [studyResults, setStudyResults] = useState<Map<number, boolean>>(new Map());
   const sessionStartTime = useRef<Date>(new Date());
@@ -28,7 +29,7 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
         isRetrySession: isRetryMode,
       });
 
-      const response = await fetch("http://localhost:8080/study/session/start", {
+      const response = await fetch(`${BASE_API_URL}/study/session/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,7 +98,7 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
 
       console.log("세션 종료 페이로드:", payload);
 
-      const response = await fetch(`http://localhost:8080/study/session/${sessionId}/end`, {
+      const response = await fetch(`${BASE_API_URL}/study/session/${sessionId}/end`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -140,7 +141,7 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
 
       console.log("학습 세션 강제 종료 시도:", { sessionId });
 
-      const response = await fetch(`http://localhost:8080/study/session/${sessionId}/close`, {
+      const response = await fetch(`${BASE_API_URL}/study/session/${sessionId}/close`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -165,12 +166,12 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
   };
 
   // beforeunload 이벤트 핸들러
-  const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  const handleBeforeUnload = (_event: BeforeUnloadEvent) => {
     if (sessionId && !sessionEnded.current) {
       const token = localStorage.getItem("token");
       if (token) {
         if (navigator.sendBeacon) {
-          const url = `http://localhost:8080/study/session/${sessionId}/close?authToken=${encodeURIComponent(token)}`;
+          const url = `${BASE_API_URL}/study/session/${sessionId}/close?authToken=${encodeURIComponent(token)}`;
           const blob = new Blob(['{}'], { type: 'application/json' });
           navigator.sendBeacon(url, blob);
           console.log("Beacon으로 학습 세션 강제 종료 요청 전송");
@@ -189,7 +190,7 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
     studyType?: string
   ) => {
     try {
-      const response = await fetch(`http://localhost:8080/study/${wordId}/check`, {
+      const response = await fetch(`${BASE_API_URL}/study/${wordId}/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -225,7 +226,7 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
     try {
       const token = localStorage.getItem("token");
       if (token) {
-        await fetch("http://localhost:8080/study/result", {
+        await fetch(`${BASE_API_URL}/study/result`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -271,6 +272,6 @@ export const useStudySession = ({ level, partId, studyType, isRetryMode }: Study
     closeStudySession,
     handleAnswerResult,
     handleBackButtonClick,
-    checkAnswerWithSession, // 새로운 정답 확인 함수 추가
+    checkAnswerWithSession,
   };
 };

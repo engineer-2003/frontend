@@ -16,7 +16,6 @@ interface SelectPageProps {
   headerTitle: string;
   headerExtra?: React.ReactNode;
   headerLeft?: React.ReactNode;
-  headerLayout?: 'row' | 'col';
   items: SelectItem[];
   showBackButton?: boolean;
 }
@@ -25,7 +24,6 @@ const SelectPage: React.FC<SelectPageProps> = ({
   headerTitle,
   headerExtra,
   headerLeft,
-  headerLayout = 'col',
   items,
   showBackButton = true,
 }) => {

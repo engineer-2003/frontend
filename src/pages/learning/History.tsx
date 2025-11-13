@@ -1,5 +1,5 @@
 // src/pages/learning/History.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -13,6 +13,7 @@ interface StudyRecord {
 }
 
 export default function History() {
+  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [records, setRecords] = useState<StudyRecord[]>([]);
@@ -34,7 +35,7 @@ export default function History() {
 
   const fetchStudyRecords = async (token: string) => {
     try {
-      const response = await fetch(`http://localhost:8080/study/records`, {
+      const response = await fetch(`${BASE_API_URL}/study/records`, {
         headers: {
           "Authorization": `Bearer ${token}`,
         },

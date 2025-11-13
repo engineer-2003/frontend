@@ -31,12 +31,13 @@ export const useWordsFetch = ({ level, partId, studyType, isRetryMode, filterWor
     const fetchWords = async () => {
       try {
         setLoading(true);
+        const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
         const token = localStorage.getItem("token");
         
-        let endpoint = `http://localhost:8080/study?level=${level}&part=${partId}`;
+        let endpoint = `${BASE_API_URL}/study?level=${level}&part=${partId}`;
         
         if (isRetryMode && token) {
-          endpoint = `http://localhost:8080/study/incorrect?level=${level}&part=${partId}&studyType=${studyType}`;
+          endpoint = `${BASE_API_URL}/study/incorrect?level=${level}&part=${partId}&studyType=${studyType}`;
         }
         
         const headers: HeadersInit = {};

@@ -5,13 +5,14 @@ import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 
 export default function Login() {
+  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/users/login", {
+      const response = await fetch(`${BASE_API_URL}/api/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -41,7 +42,7 @@ export default function Login() {
 
         const { email } = userInfo.data;
 
-        const response = await fetch("http://localhost:8080/api/users/login/google", {
+        const response = await fetch(`${BASE_API_URL}/api/users/login/google`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
