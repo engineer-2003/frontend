@@ -23,7 +23,6 @@ interface StudyPageProps {
   onPrevious: () => void;
   showNavigationButtons?: boolean;
   additionalInfo?: React.ReactNode;
-  showHints?: boolean;
   currentWordId?: number;
   onAnswerResult?: (wordId: number, isCorrect: boolean) => void;
   onBackButtonClick?: () => Promise<void>;
@@ -41,7 +40,6 @@ const StudyPage: React.FC<StudyPageProps> = ({
   onPrevious,
   showNavigationButtons = true,
   additionalInfo,
-  showHints = true,
   currentWordId,
   onAnswerResult,
   onBackButtonClick,
@@ -121,9 +119,15 @@ const StudyPage: React.FC<StudyPageProps> = ({
   const progressPercentage = totalCount > 0 ? ((currentIndex + 1) / totalCount) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-b from-sakura-lighter to-sakura-light flex flex-col relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="animate-float-slow absolute top-20 left-10 text-sakura text-4xl opacity-20">✿</div>
+        <div className="animate-float-medium absolute bottom-32 right-20 text-sakura-dark text-5xl opacity-15">✿</div>
+        <div className="animate-float-slow absolute top-1/2 right-1/4 text-sakura text-3xl opacity-20">✿</div>
+      </div>
+
+      {/* Header - 반투명 효과 적용 */}
+      <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-20">
         <div className="px-4 py-3">
           <div className="flex justify-between items-center mb-3">
             <button
@@ -134,16 +138,16 @@ const StudyPage: React.FC<StudyPageProps> = ({
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="text-sm">{isNavigating ? '처리 중...' : '학습 화면'}</span>
+              <span className="text-sm font-medium">{isNavigating ? '처리 중...' : '학습 화면'}</span>
             </button>
-            <div className="text-sm font-semibold text-gray-900">
+            <div className="px-3 py-1 bg-gradient-to-r from-sakura to-sakura-dark text-white text-sm font-bold rounded-full shadow-md">
               {currentIndex + 1} / {totalCount}
             </div>
           </div>
           
-          <div className="relative w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+          <div className="relative w-full bg-gray-200 rounded-full h-2.5 overflow-hidden shadow-inner">
             <div 
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-sakura to-sakura-dark rounded-full transition-all duration-500 ease-out"
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-sakura to-sakura-dark rounded-full transition-all duration-500 ease-out shadow-sm"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
@@ -151,14 +155,14 @@ const StudyPage: React.FC<StudyPageProps> = ({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 relative z-10">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
             {subtitle && <div className="text-base text-gray-600">{subtitle}</div>}
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-white/95 rounded-3xl shadow-xl p-6 backdrop-blur-sm border border-pink-100">
             <div className="mb-6">
               <div className="text-base font-bold text-gray-900 mb-4 pb-3 border-b border-gray-200 text-center">
                 {questionText}
@@ -172,30 +176,25 @@ const StudyPage: React.FC<StudyPageProps> = ({
 
             {/* 결과 표시 영역 */}
             {checkResult && (
-              <div className={`mb-4 p-4 rounded-xl ${
+              <div className={`mb-4 p-4 rounded-2xl shadow-sm ${
                   checkResult.correct 
-                    ? 'bg-green-50 border-2 border-green-200' 
-                    : 'bg-red-50 border-2 border-red-200'
+                    ? 'bg-green-50 border-2 border-green-300' 
+                    : 'bg-pink-50 border-2 border-sakura'
                 }`}
               >
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   {checkResult.correct ? (
                     <span className="font-bold text-green-700 text-lg">정답입니다! 🎉</span>
                   ) : (
-                    <span className="font-bold text-red-700 text-lg">틀렸습니다 😢</span>
+                    <span className="font-bold text-sakura-dark text-lg">틀렸습니다 😢</span>
                   )}
                 </div>
                 
                 {/* 오답일 때 정답 명확히 표시 */}
                 {!checkResult.correct && (
-                  <div className="mt-3 p-3 bg-white rounded-lg text-center border border-red-100 shadow-sm">
+                  <div className="mt-3 p-3 bg-white rounded-lg text-center border border-sakura shadow-sm">
                     <div className="text-xs text-gray-500 mb-1">정답</div>
-                    <div className="text-xl font-bold text-red-600">{checkResult.correctAnswer}</div>
-                    
-                    {/* 힌트는 이제 보조적으로 표시 */}
-                    {checkResult.hint && showHints && (
-                       <div className="text-xs text-gray-400 mt-2">{checkResult.hint}</div>
-                    )}
+                    <div className="text-xl font-bold text-sakura-dark">{checkResult.correctAnswer}</div>
                   </div>
                 )}
               </div>
@@ -209,8 +208,7 @@ const StudyPage: React.FC<StudyPageProps> = ({
                 onChange={(e) => setAnswer(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={placeholder}
-                className="w-full border-2 border-gray-200 focus:border-sakura-dark focus:outline-none px-4 py-4 rounded-xl text-center text-lg transition-all"
-                // 정답을 맞췄거나 확인이 끝난 상태에서는 입력 비활성화 (선택 사항)
+                className="w-full border-2 border-gray-200 focus:border-sakura-dark focus:outline-none focus:ring-2 focus:ring-sakura/30 px-4 py-4 rounded-xl text-center text-lg transition-all shadow-sm"
                 disabled={isChecked && checkResult?.correct}
                 autoFocus
               />
@@ -219,10 +217,10 @@ const StudyPage: React.FC<StudyPageProps> = ({
             {/* 메인 액션 버튼 */}
             <button
               onClick={handleMainAction}
-              className={`w-full py-4 text-white font-bold text-lg rounded-xl hover:shadow-md transform active:scale-95 transition-all duration-200 ${
+              className={`w-full py-4 text-white font-bold text-lg rounded-xl shadow-md hover:shadow-lg transform active:scale-95 transition-all duration-200 ${
                   isChecked 
-                  ? 'bg-blue-500 hover:bg-blue-600' // '다음 문제' 버튼 색상
-                  : 'bg-gradient-to-r from-sakura to-sakura-dark' // '정답 확인' 버튼 색상
+                  ? 'bg-gradient-to-r from-sakura-dark to-sakura hover:from-sakura-darker hover:to-sakura-dark' 
+                  : 'bg-gradient-to-r from-sakura to-sakura-dark hover:shadow-sakura/50'
               }`}
             >
               {isChecked ? '다음 문제 →' : '정답 확인'}
@@ -233,13 +231,13 @@ const StudyPage: React.FC<StudyPageProps> = ({
               <div className="flex gap-3 mt-3">
                 <button
                   onClick={handlePrevious}
-                  className="flex-1 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                  className="flex-1 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition-colors shadow-sm"
                 >
                   ← 이전
                 </button>
                 <button
                   onClick={handleNext}
-                  className="flex-1 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                  className="flex-1 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition-colors shadow-sm"
                 >
                   건너뛰기
                 </button>

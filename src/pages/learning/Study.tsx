@@ -297,7 +297,6 @@ const Study: React.FC = () => {
         {...baseProps}
         questionText="다음 빈칸에 들어갈 단어를 입력하세요"
         placeholder="정답을 입력하세요"
-        showHints={true}
         additionalInfo={
           <div>
             <div className="text-lg font-semibold mb-3 text-gray-700">
@@ -324,7 +323,6 @@ const Study: React.FC = () => {
         {...baseProps}
         questionText={`다음 단어의 ${problem.formName}을 입력하세요`}
         placeholder="활용형을 입력하세요"
-        showHints={false}
         additionalInfo={
           <div className="text-center">
             <div className="bg-sakura-lighter rounded-lg p-4 mb-4">
