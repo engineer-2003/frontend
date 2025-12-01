@@ -207,9 +207,7 @@ const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = 
   return (
     <SelectPage
       headerTitle="급수 선택"
-      headerExtra="✿"
       items={levelStats.map((stat, index) => {
-        // N5부터 N1까지 점점 진해지는 색상
         const gradientColors = [
           "from-sakura-lighter to-sakura-light",
           "from-sakura-light to-sakura",
@@ -256,7 +254,6 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
 
   const fetchData = async (token: string) => {
     try {
-      // 품사별 통계 조회
       const statsResponse = await fetch(`${BASE_API_URL}/study/stats/part?level=${level}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -266,7 +263,6 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
         setPartStats(statsData);
       }
 
-      // 틀린 단어 개수 조회
       const counts: Record<string, IncorrectWordCount> = {};
       for (const part of partData) {
         try {
@@ -335,7 +331,6 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
   return (
     <SelectPage
       headerTitle={`${level} 품사 선택`}
-      headerExtra="✿"
       items={partData.map((part) => {
         const counts = incorrectCounts[part.id] || { sentence: 0, conjugation: 0 };
         const stat = partStats.find(s => s.part === part.backendValue);

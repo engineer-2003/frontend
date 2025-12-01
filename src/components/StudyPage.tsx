@@ -1,5 +1,5 @@
 // src/components/StudyPage.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface CheckAnswerResponse {
@@ -50,16 +50,36 @@ const StudyPage: React.FC<StudyPageProps> = ({
   const [answer, setAnswer] = useState("");
   const [checkResult, setCheckResult] = useState<CheckAnswerResponse | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
+  
+  // 정답 확인 상태 (false: 입력 중, true: 결과 확인 중)
+  const [isChecked, setIsChecked] = useState(false);
 
-  const handleCheckAnswer = async () => {
+  useEffect(() => {
+    // 문제 변경 시 상태 초기화
+    setAnswer("");
+    setCheckResult(null);
+    setIsChecked(false);
+  }, [currentIndex, currentWordId]);
+
+  // 메인 액션 (정답 확인 -> 다음 문제)
+  const handleMainAction = async () => {
+    // 1. 이미 정답을 확인한 상태라면 '다음'으로 이동
+    if (isChecked) {
+      handleNext();
+      return;
+    }
+
+    // 2. 답을 입력하지 않았다면 경고
     if (!answer.trim()) {
       alert("답을 입력해주세요.");
       return;
     }
 
+    // 3. 정답 체크 수행
     try {
       const result = await onCheckAnswer(answer.trim());
       setCheckResult(result);
+      setIsChecked(true); // 확인 상태로 변경
       
       if (onAnswerResult && currentWordId) {
         onAnswerResult(currentWordId, result.correct);
@@ -70,42 +90,35 @@ const StudyPage: React.FC<StudyPageProps> = ({
   };
 
   const handleNext = () => {
-    setAnswer("");
-    setCheckResult(null);
     onNext();
   };
 
   const handlePrevious = () => {
-    setAnswer("");
-    setCheckResult(null);
     onPrevious();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !checkResult?.correct) {
-      handleCheckAnswer();
+    if (e.key === 'Enter') {
+      handleMainAction();
     }
   };
 
   const handleBackButton = async () => {
     if (isNavigating) return;
-    
     setIsNavigating(true);
-    
     try {
       if (onBackButtonClick) {
         await onBackButtonClick();
       }
       navigate(-1);
     } catch (error) {
-      console.error("뒤로가기 처리 중 오류:", error);
       navigate(-1);
     } finally {
       setIsNavigating(false);
     }
   };
 
-  const progressPercentage = ((currentIndex + 1) / totalCount) * 100;
+  const progressPercentage = totalCount > 0 ? ((currentIndex + 1) / totalCount) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
@@ -116,9 +129,7 @@ const StudyPage: React.FC<StudyPageProps> = ({
             <button
               onClick={handleBackButton}
               disabled={isNavigating}
-              className={`flex items-center space-x-1 text-gray-700 hover:text-gray-900 transition-colors ${
-                isNavigating ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className="flex items-center space-x-1 text-gray-700 hover:text-gray-900 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -130,19 +141,11 @@ const StudyPage: React.FC<StudyPageProps> = ({
             </div>
           </div>
           
-          {/* Progress Bar */}
           <div className="relative w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
             <div 
               className="absolute top-0 left-0 h-full bg-gradient-to-r from-sakura to-sakura-dark rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progressPercentage}%` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer"></div>
-            </div>
-          </div>
-          
-          {/* Progress Text */}
-          <div className="text-xs text-sakura-dark font-semibold text-center mt-2">
-            진행률: {Math.round(progressPercentage)}%
+            />
           </div>
         </div>
       </div>
@@ -150,16 +153,12 @@ const StudyPage: React.FC<StudyPageProps> = ({
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-md mx-auto">
-          {/* Title Section */}
-          <div className="text-center mb-6 animate-fade-in-05s">
+          <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
             {subtitle && <div className="text-base text-gray-600">{subtitle}</div>}
-            <div className="text-sakura text-3xl mt-2 animate-pulse-gentle">✿</div>
           </div>
 
-          {/* Question Card */}
-          <div className="bg-white rounded-2xl shadow-sm p-6 animate-slide-up">
-            {/* Question - 가운데 정렬 */}
+          <div className="bg-white rounded-2xl shadow-sm p-6">
             <div className="mb-6">
               <div className="text-base font-bold text-gray-900 mb-4 pb-3 border-b border-gray-200 text-center">
                 {questionText}
@@ -171,85 +170,81 @@ const StudyPage: React.FC<StudyPageProps> = ({
               )}
             </div>
 
-            {/* Result Display */}
+            {/* 결과 표시 영역 */}
             {checkResult && (
-              <div 
-                className={`mb-4 p-4 rounded-xl animate-bounce-in ${
+              <div className={`mb-4 p-4 rounded-xl ${
                   checkResult.correct 
-                    ? 'bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-300' 
-                    : 'bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-300'
+                    ? 'bg-green-50 border-2 border-green-200' 
+                    : 'bg-red-50 border-2 border-red-200'
                 }`}
               >
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   {checkResult.correct ? (
-                    <>
-                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="font-bold text-green-800">정답입니다!</span>
-                    </>
+                    <span className="font-bold text-green-700 text-lg">정답입니다! 🎉</span>
                   ) : (
-                    <>
-                      <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      <span className="font-bold text-red-800">틀렸습니다</span>
-                    </>
+                    <span className="font-bold text-red-700 text-lg">틀렸습니다 😢</span>
                   )}
                 </div>
-                <div className={`text-sm text-center ${checkResult.correct ? 'text-green-700' : 'text-red-700'}`}>
-                  {checkResult.message}
-                </div>
-                {showHints && !checkResult.correct && checkResult.hint && (
-                  <div className="text-sm mt-2 text-red-600 bg-white bg-opacity-50 p-2 rounded text-center">
-                    💡 {checkResult.hint}
+                
+                {/* 오답일 때 정답 명확히 표시 */}
+                {!checkResult.correct && (
+                  <div className="mt-3 p-3 bg-white rounded-lg text-center border border-red-100 shadow-sm">
+                    <div className="text-xs text-gray-500 mb-1">정답</div>
+                    <div className="text-xl font-bold text-red-600">{checkResult.correctAnswer}</div>
+                    
+                    {/* 힌트는 이제 보조적으로 표시 */}
+                    {checkResult.hint && showHints && (
+                       <div className="text-xs text-gray-400 mt-2">{checkResult.hint}</div>
+                    )}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Input */}
-            <div className="mb-4">
+            {/* 입력창 */}
+            <div className="mb-6">
               <input
                 type="text"
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={placeholder}
-                className="w-full border-2 border-gray-200 focus:border-sakura-dark focus:outline-none px-4 py-4 rounded-xl text-center text-base transition-all"
-                disabled={checkResult?.correct}
+                className="w-full border-2 border-gray-200 focus:border-sakura-dark focus:outline-none px-4 py-4 rounded-xl text-center text-lg transition-all"
+                // 정답을 맞췄거나 확인이 끝난 상태에서는 입력 비활성화 (선택 사항)
+                disabled={isChecked && checkResult?.correct}
+                autoFocus
               />
             </div>
 
-            {/* Buttons */}
-            <div className="space-y-2">
-              {/* 정답 확인 버튼 */}
-              <button
-                onClick={handleCheckAnswer}
-                disabled={!answer.trim() || checkResult?.correct}
-                className="w-full py-4 bg-gradient-to-r from-sakura to-sakura-dark text-white font-semibold rounded-xl hover:shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {checkResult?.correct ? '✓ 정답 확인 완료' : '정답 확인'}
-              </button>
+            {/* 메인 액션 버튼 */}
+            <button
+              onClick={handleMainAction}
+              className={`w-full py-4 text-white font-bold text-lg rounded-xl hover:shadow-md transform active:scale-95 transition-all duration-200 ${
+                  isChecked 
+                  ? 'bg-blue-500 hover:bg-blue-600' // '다음 문제' 버튼 색상
+                  : 'bg-gradient-to-r from-sakura to-sakura-dark' // '정답 확인' 버튼 색상
+              }`}
+            >
+              {isChecked ? '다음 문제 →' : '정답 확인'}
+            </button>
 
-              {/* 네비게이션 버튼 */}
-              {showNavigationButtons && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={handlePrevious}
-                    className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
-                  >
-                    ← 이전
-                  </button>
-                  <button
-                    onClick={handleNext}
-                    className="flex-1 py-3 bg-gradient-to-r from-sakura to-sakura-dark text-white font-semibold rounded-xl hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0"
-                  >
-                    다음 →
-                  </button>
-                </div>
-              )}
-            </div>
+            {/* 이전/건너뛰기 네비게이션 (확인 전일 때만 노출) */}
+            {showNavigationButtons && !isChecked && (
+              <div className="flex gap-3 mt-3">
+                <button
+                  onClick={handlePrevious}
+                  className="flex-1 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  ← 이전
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="flex-1 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  건너뛰기
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
