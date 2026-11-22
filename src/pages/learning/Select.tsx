@@ -50,6 +50,8 @@ type PartStat = {
 };
 
 // --- Data ---
+const defaultLevels: string[] = ["N5", "N4", "N3", "N2", "N1"];
+
 const partData: Part[] = [
   { id: "noun", title: "명사", backendValue: "명사", wordCount: 120, progress: 20, hasConjugation: false },
   { id: "adj", title: "형용사", backendValue: "형용사", wordCount: 80, progress: 10, hasConjugation: true },
@@ -114,21 +116,21 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
       title: "급수별 학습",
       description: `전체 단어 수: ${overviewStats?.totalWords || 0}개\n학습한 단어: ${overviewStats?.studiedWords || 0}개\n진도율: ${overviewStats?.progress || 0}%`,
       onClick: () => navigate("/select/level"),
-      buttonClassName: "bg-gradient-to-r from-sakura to-sakura-dark text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
+      buttonClassName: "bg-sakura text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
     },
     {
       id: "history",
       title: "학습 기록 확인",
       description: `${overviewStats?.consecutiveDays || 0}일 연속 학습 중`,
       onClick: () => navigate("/learning/history"),
-      buttonClassName: "bg-gradient-to-r from-blue-400 to-blue-500 text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
+      buttonClassName: "bg-sakura text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
     },
     {
       id: "chatbot",
       title: "AI 챗봇과 대화하기",
       description: "학습한 내용을 챗봇으로 확인하기",
       onClick: () => navigate("/learning/chatbot"),
-      buttonClassName: "bg-gradient-to-r from-green-400 to-green-500 text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
+      buttonClassName: "bg-leaf text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
     },
   ];
 
@@ -139,7 +141,7 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
         <div className="flex items-center space-x-2">
           <button
             onClick={handleLogout}
-            className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura to-sakura-dark rounded-xl hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+            className="px-4 py-2 text-sm text-white bg-sakura rounded-xl hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0"
           >
             로그아웃
           </button>
@@ -187,7 +189,9 @@ const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = 
       
       if (response.ok) {
         const data = await response.json();
-        setLevelStats(data);
+        setLevelStats(Array.isArray(data) ? data : []);
+      } else {
+        console.error("급수별 학습 통계 응답 오류:", response.status);
       }
     } catch (error) {
       console.error("급수별 학습 통계 조회 실패:", error);
@@ -204,12 +208,21 @@ const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = 
     );
   }
 
+  const displayLevels: LevelStat[] =
+    levelStats.length > 0
+      ? levelStats
+      : defaultLevels.map((lvl) => ({
+          level: lvl,
+          totalWords: 0,
+          studiedWords: 0,
+          progress: 0,
+        }));
+
   return (
     <SelectPage
       headerTitle="급수 선택"
       headerExtra="✿"
-      items={levelStats.map((stat, index) => {
-        // N5부터 N1까지 점점 진해지는 색상
+      items={displayLevels.map((stat, index) => {
         const gradientColors = [
           "from-sakura-lighter to-sakura-light",
           "from-sakura-light to-sakura",
@@ -223,7 +236,7 @@ const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = 
           title: stat.level,
           description: `전체 단어: ${stat.totalWords}개\n학습한 단어: ${stat.studiedWords}개\n진도율: ${stat.progress}%`,
           onClick: () => navigate("/select/part", { state: { level: stat.level } }),
-          buttonClassName: `bg-gradient-to-r ${gradientColors[index]} text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0`,
+          buttonClassName: `bg-gradient-to-r ${gradientColors[index % gradientColors.length]} text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0`,
         };
       })}
     />
@@ -332,88 +345,157 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
     );
   }
 
+  // 최다 오답 품사 계산
+  const partTotals = partData.map((part) => {
+    const c = incorrectCounts[part.id] || { sentence: 0, conjugation: 0 };
+    return {
+      part,
+      sentence: c.sentence,
+      conjugation: c.conjugation,
+      total: c.sentence + c.conjugation,
+    };
+  });
+
+  const maxIncorrect = Math.max(...partTotals.map((p) => p.total), 0);
+  const topParts = maxIncorrect > 0 ? partTotals.filter((p) => p.total === maxIncorrect) : [];
+  const primaryTarget = topParts[0];
+
+  const recommendationItem: SelectItem = {
+    id: "recommendation",
+    title: "💡 오늘의 학습 추천",
+    customContent:
+      maxIncorrect > 0 && primaryTarget ? (
+        <div className="bg-sakura/10 border border-sakura/30 rounded-xl p-3.5 text-left space-y-2.5">
+          <p className="text-sm text-gray-800 leading-relaxed">
+            <span className="font-bold text-sakura-dark">
+              {topParts.map((t) => t.part.title).join(" · ")}
+            </span>
+            에서 틀린 단어가 가장 많아요! (총{" "}
+            <span className="font-bold text-red-500">{maxIncorrect}개</span>)
+            <br />
+            오답이 누적된 품사부터 집중 복습하는 것을 추천해요.
+          </p>
+          <button
+            onClick={() =>
+              navigate("/learning/study", {
+                state: {
+                  level: level,
+                  partId: primaryTarget.part.backendValue,
+                  studyType: primaryTarget.sentence >= primaryTarget.conjugation ? "sentence" : "conjugation",
+                  retryMode: true,
+                },
+              })
+            }
+            className="w-full py-2.5 bg-sakura-dark text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all"
+          >
+            {primaryTarget.part.title} 틀린 단어 바로 복습하기 →
+          </button>
+        </div>
+      ) : (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-left">
+          <p className="text-sm text-gray-700 leading-relaxed">
+            아직 {level} 급수에서 틀린 단어가 없어요!
+            <br />
+            <span className="font-bold text-sakura-dark">동사</span> 또는{" "}
+            <span className="font-bold text-sakura-dark">명사</span>부터 차근차근 학습을 시작해보세요.
+          </p>
+        </div>
+      ),
+    onClick: () => {},
+  };
+
+  const partItems: SelectItem[] = partData.map((part) => {
+    const counts = incorrectCounts[part.id] || { sentence: 0, conjugation: 0 };
+    const stat = partStats.find((s) => s.part === part.backendValue);
+
+    return {
+      id: part.id,
+      title: part.title,
+      description: `전체 단어: ${stat?.totalWords || part.wordCount}개\n학습한 단어: ${stat?.studiedWords || 0}개\n진도율: ${stat?.progress || 0}%`,
+      customContent: (
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <button
+              onClick={() =>
+                navigate("/learning/study", {
+                  state: {
+                    level: level,
+                    partId: part.backendValue,
+                    studyType: "sentence",
+                  },
+                })
+              }
+              className="flex-1 px-3 py-3 bg-gradient-to-r from-sakura to-sakura-dark text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
+            >
+              예문 학습
+            </button>
+
+            {counts.sentence > 0 && (
+              <button
+                onClick={() =>
+                  navigate("/learning/study", {
+                    state: {
+                      level: level,
+                      partId: part.backendValue,
+                      studyType: "sentence",
+                      retryMode: true,
+                    },
+                  })
+                }
+                className="flex-1 px-3 py-3 bg-gradient-to-r from-sakura-dark to-sakura-darker text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
+              >
+                재학습 ({counts.sentence}개)
+              </button>
+            )}
+          </div>
+
+          {part.hasConjugation && (
+            <div className="flex gap-2">
+              <button
+                onClick={() =>
+                  navigate("/learning/study", {
+                    state: {
+                      level: level,
+                      partId: part.backendValue,
+                      studyType: "conjugation",
+                    },
+                  })
+                }
+                className="flex-1 px-3 py-3 bg-leaf text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
+              >
+                활용형 학습
+              </button>
+
+              {counts.conjugation > 0 && (
+                <button
+                  onClick={() =>
+                    navigate("/learning/study", {
+                      state: {
+                        level: level,
+                        partId: part.backendValue,
+                        studyType: "conjugation",
+                        retryMode: true,
+                      },
+                    })
+                  }
+                  className="flex-1 px-3 py-3 bg-gradient-to-r from-sakura-dark to-sakura-darker text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  재학습 ({counts.conjugation}개)
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      ),
+      onClick: () => {},
+    };
+  });
+
   return (
     <SelectPage
       headerTitle={`${level} 품사 선택`}
       headerExtra="✿"
-      items={partData.map((part) => {
-        const counts = incorrectCounts[part.id] || { sentence: 0, conjugation: 0 };
-        const stat = partStats.find(s => s.part === part.backendValue);
-        
-        return {
-          id: part.id,
-          title: part.title,
-          description: `전체 단어: ${stat?.totalWords || part.wordCount}개\n학습한 단어: ${stat?.studiedWords || 0}개\n진도율: ${stat?.progress || 0}%`,
-          customContent: (
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => navigate("/learning/study", {
-                    state: {
-                      level: level,
-                      partId: part.backendValue,
-                      studyType: "sentence"
-                    }
-                  })}
-                  className="flex-1 px-3 py-3 bg-gradient-to-r from-sakura to-sakura-dark text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  예문 학습
-                </button>
-                
-                {counts.sentence > 0 && (
-                  <button
-                    onClick={() => navigate("/learning/study", {
-                      state: {
-                        level: level,
-                        partId: part.backendValue,
-                        studyType: "sentence",
-                        retryMode: true
-                      }
-                    })}
-                    className="flex-1 px-3 py-3 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
-                  >
-                    재학습 ({counts.sentence}개)
-                  </button>
-                )}
-              </div>
-
-              {part.hasConjugation && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => navigate("/learning/study", {
-                      state: {
-                        level: level,
-                        partId: part.backendValue,
-                        studyType: "conjugation"
-                      }
-                    })}
-                    className="flex-1 px-3 py-3 bg-gradient-to-r from-purple-400 to-purple-500 text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
-                  >
-                    활용형 학습
-                  </button>
-                  
-                  {counts.conjugation > 0 && (
-                    <button
-                      onClick={() => navigate("/learning/study", {
-                        state: {
-                          level: level,
-                          partId: part.backendValue,
-                          studyType: "conjugation",
-                          retryMode: true
-                        }
-                      })}
-                      className="flex-1 px-3 py-3 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                      재학습 ({counts.conjugation}개)
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          ),
-          onClick: () => {},
-        };
-      })}
+      items={[recommendationItem, ...partItems]}
     />
   );
 };

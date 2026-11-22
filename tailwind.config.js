@@ -12,12 +12,12 @@ export default {
           DEFAULT: "#F9C5D1", // 기본 벚꽃색
           dark: "#F08CA0",    // 진한 벚꽃색
           darker: "#D46A7E",  // 더 진한 벚꽃색
+          button: "#F08CA0"
         },
-        branch: {
-          light: "#8B5E3C",   // 밝은 갈색
-          DEFAULT: "#5C4033", // 나뭇가지색
-          dark: "#3E2723",    // 어두운 나뭇가지색
+        leaf: {
+          DEFAULT: "#d4f08e"
         },
+        
       },
       keyframes: {
         fadeIn: {

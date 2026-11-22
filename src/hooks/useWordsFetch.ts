@@ -1,7 +1,7 @@
 // src/hooks/useWordsFetch.ts
 import { useState, useEffect } from 'react';
 
-interface WordDto {
+export interface WordDto {
   id: number;
   word: string;
   reading: string;
@@ -12,6 +12,7 @@ interface WordDto {
   exampleTranslation: string;
   partOfSpeech: string;
   forms: { [key: string]: string };
+  incorrectCount?: number;
 }
 
 interface UseWordsFetchParams {
@@ -34,7 +35,7 @@ export const useWordsFetch = ({ level, partId, studyType, isRetryMode, filterWor
         const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
         const token = localStorage.getItem("token");
         
-        let endpoint = `${BASE_API_URL}/study?level=${level}&part=${partId}`;
+        let endpoint = `${BASE_API_URL}/study?level=${level}&part=${partId}&studyType=${studyType}`;
         
         if (isRetryMode && token) {
           endpoint = `${BASE_API_URL}/study/incorrect?level=${level}&part=${partId}&studyType=${studyType}`;

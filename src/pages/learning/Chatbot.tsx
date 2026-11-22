@@ -12,19 +12,72 @@ type Message = {
 const Chatbot: React.FC = () => {
   const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'init-1',
-      text: 'こんにちは！AIチャットへようこそ。日本語で何でも聞いてください。',
-      sender: 'bot',
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('로그인이 필요합니다.');
+      navigate('/user/login');
+      return;
+    }
+
+    const initChat = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${BASE_API_URL}/api/chat/init`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setMessages([
+            {
+              id: `init-${Date.now()}`,
+              text: data.reply,
+              sender: 'bot',
+              timestamp: new Date(),
+            },
+          ]);
+        } else {
+          setMessages([
+            {
+              id: `init-${Date.now()}`,
+              text: '안녕! 최근 학습한 단어들을 바탕으로 일본어 문장 만들기 연습을 해볼까?',
+              sender: 'bot',
+              timestamp: new Date(),
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error('초기 챗봇 메시지 로드 실패:', error);
+        setMessages([
+          {
+            id: `init-${Date.now()}`,
+            text: '안녕! 최근 학습한 단어들을 바탕으로 일본어 문장 만들기 연습을 해볼까?',
+            sender: 'bot',
+            timestamp: new Date(),
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initChat();
+  }, [BASE_API_URL, navigate]);
 
   useEffect(() => {
     chatContainerRef.current?.scrollTo({
@@ -40,12 +93,24 @@ const Chatbot: React.FC = () => {
   const handleSend = async () => {
     if (input.trim() === '' || isLoading) return;
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('로그인이 필요합니다.');
+      navigate('/user/login');
+      return;
+    }
+
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       text: input,
       sender: 'user',
       timestamp: new Date(),
     };
+
+    const currentHistory = messages.map((m) => ({
+      sender: m.sender,
+      text: m.text,
+    }));
 
     setMessages((prev) => [...prev, userMessage]);
     const messageToSend = input;
@@ -57,9 +122,11 @@ const Chatbot: React.FC = () => {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ 
-            message: messageToSend 
+          message: messageToSend,
+          history: currentHistory,
         }), 
       });
 
@@ -106,7 +173,7 @@ const Chatbot: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-pink-50 via-purple-50 to-blue-50">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-[#FAD2DC] to-[#FFFFFF]">
       {/* 헤더 - 카카오톡 스타일 */}
       <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
         <button
@@ -120,7 +187,6 @@ const Chatbot: React.FC = () => {
         </button>
         <div className="flex flex-col items-center">
           <h1 className="text-lg font-semibold text-gray-900">AI 챗봇</h1>
-          <span className="text-xs text-gray-500">일본어</span>
         </div>
         <div className="w-6"></div>
       </header>
@@ -128,14 +194,8 @@ const Chatbot: React.FC = () => {
       {/* 채팅 영역 */}
       <div
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-br from-pink-50/30 via-purple-50/30 to-blue-50/30"
-        style={{ 
-          backgroundImage: `
-            repeating-linear-gradient(0deg, transparent, transparent 10px, rgba(255,192,203,0.1) 10px, rgba(255,192,203,0.1) 11px),
-            radial-gradient(circle at 20% 50%, rgba(255,182,193,0.15) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(216,191,216,0.15) 0%, transparent 50%)
-          `,
-        }}
+        className="flex-1 overflow-y-auto p-4 space-y-3"
+        style={{ backgroundImage: 'none' }}
       >
         {messages.map((msg) => (
           <div
@@ -146,7 +206,7 @@ const Chatbot: React.FC = () => {
               <div
                 className={`px-4 py-3 rounded-2xl shadow-sm ${
                   msg.sender === 'user'
-                    ? 'bg-gradient-to-r from-sakura to-sakura-dark text-white rounded-tr-sm'
+                    ? 'bg-[#F5B1BF] text-white rounded-tr-sm'
                     : 'bg-white text-gray-800 rounded-tl-sm'
                 }`}
               >
@@ -154,7 +214,7 @@ const Chatbot: React.FC = () => {
                   <p key={index} className="leading-relaxed">{line}</p>
                 ))}
               </div>
-              <span className="text-xs text-gray-500 mt-1 px-2">
+              <span className="text-xs text-gray-600 mt-1 px-2">
                 {formatTime(msg.timestamp)}
               </span>
             </div>
@@ -192,14 +252,14 @@ const Chatbot: React.FC = () => {
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="메시지를 입력하세요..."
-              className="w-full px-4 py-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-full focus:outline-none focus:ring-2 focus:ring-sakura-dark transition-all shadow-sm"
+              className="w-full px-4 py-3 bg-[#F6C5CC] text-white placeholder-white/80 rounded-full focus:outline-none transition-all shadow-sm"
               disabled={isLoading}
             />
           </div>
           <button
             onClick={handleSend}
             disabled={isLoading || input.trim() === ''}
-            className="p-3 bg-gradient-to-r from-sakura to-sakura-dark text-white rounded-full hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none"
+            className="p-3 bg-[#F6C5CC] text-white rounded-full hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none"
             aria-label="전송"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
