@@ -180,6 +180,13 @@ const MainSelectView: React.FC<{
       headerExtra={
         <div className="flex items-center space-x-2">
           <button
+            onClick={() => navigate("/tutorial")}
+            className="px-4 py-2 text-sm text-sakura-dark border border-sakura-dark bg-white rounded-xl hover:bg-[#FFF5F7] transition-all"
+          >
+            튜토리얼
+          </button>
+
+          <button
             onClick={handleLogout}
             className="px-4 py-2 text-sm text-white bg-sakura rounded-xl hover:opacity-90 transition-all"
           >
