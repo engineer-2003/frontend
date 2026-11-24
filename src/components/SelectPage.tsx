@@ -18,6 +18,7 @@ interface SelectPageProps {
   headerLeft?: React.ReactNode;
   items: SelectItem[];
   showBackButton?: boolean;
+  footerContent?: React.ReactNode;
 }
 
 const SelectPage: React.FC<SelectPageProps> = ({
@@ -26,6 +27,7 @@ const SelectPage: React.FC<SelectPageProps> = ({
   headerLeft,
   items,
   showBackButton = true,
+  footerContent,
 }) => {
   const navigate = useNavigate();
 
@@ -34,6 +36,7 @@ const SelectPage: React.FC<SelectPageProps> = ({
       {/* Header */}
       <div className="bg-white sticky top-0 z-10">
         <div className="relative flex items-center justify-center px-4 py-4">
+
           {/* 좌측 영역 */}
           <div className="absolute left-4">
             {showBackButton ? (
@@ -66,7 +69,7 @@ const SelectPage: React.FC<SelectPageProps> = ({
             {headerTitle}
           </h1>
 
-          {/* headerExtra */}
+          {/* Header Extra */}
           {headerExtra && (
             <div className="absolute right-4">
               {typeof headerExtra === "string" ? (
@@ -82,6 +85,7 @@ const SelectPage: React.FC<SelectPageProps> = ({
       {/* Content */}
       <div className="flex-1 px-4 py-6">
         <div className="max-w-md mx-auto space-y-4">
+
           {items.map((item, index) => (
             <div
               key={item.id}
@@ -89,6 +93,7 @@ const SelectPage: React.FC<SelectPageProps> = ({
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="p-5">
+
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-lg font-bold text-gray-900">
                     {item.title}
@@ -119,7 +124,9 @@ const SelectPage: React.FC<SelectPageProps> = ({
 
                 {/* 커스텀 콘텐츠 또는 기본 버튼 */}
                 {item.customContent ? (
-                  <div className="mt-3">{item.customContent}</div>
+                  <div className="mt-3">
+                    {item.customContent}
+                  </div>
                 ) : (
                   !item.hideDefaultButton && (
                     <button
@@ -133,9 +140,18 @@ const SelectPage: React.FC<SelectPageProps> = ({
                     </button>
                   )
                 )}
+
               </div>
             </div>
           ))}
+
+          {/* 카드 아래 추가 콘텐츠 */}
+          {footerContent && (
+            <div className="pt-2 text-center">
+              {footerContent}
+            </div>
+          )}
+
         </div>
       </div>
     </div>

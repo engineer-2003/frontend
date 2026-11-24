@@ -14,6 +14,16 @@ type SelectItem = {
   hideDefaultButton?: boolean;
 };
 
+type StudyRecord = {
+  studyDate: string;
+  levelName: string;
+  partOfSpeech: string;
+  wordCount: number;
+  correctCount: number;
+  studyTime: number;
+  studyDuration: string;
+};
+
 type Part = {
   id: string;
   title: string;
@@ -87,7 +97,10 @@ const partData: Part[] = [
   },
 ];
 
-// --- MainSelectView ---
+// ==================================================
+// MainSelectView
+// ==================================================
+
 const MainSelectView: React.FC<{
   navigate: ReturnType<typeof useNavigate>;
 }> = ({ navigate }) => {
@@ -95,8 +108,11 @@ const MainSelectView: React.FC<{
     import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8080";
 
   const [isAuthorized, setIsAuthorized] = useState(false);
+
   const [overviewStats, setOverviewStats] =
     useState<OverviewStats | null>(null);
+
+  const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -107,10 +123,17 @@ const MainSelectView: React.FC<{
       navigate("/user/login");
     } else {
       setIsAuthorized(true);
-      fetchOverviewStats(token);
+
+      Promise.all([
+        fetchOverviewStats(token),
+        fetchStudyStreak(token),
+      ]).finally(() => {
+        setLoading(false);
+      });
     }
   }, [navigate]);
 
+  // 전체 학습 통계 조회
   const fetchOverviewStats = async (token: string) => {
     try {
       const response = await fetch(
@@ -125,14 +148,109 @@ const MainSelectView: React.FC<{
       if (response.ok) {
         const data = await response.json();
         setOverviewStats(data);
+      } else {
+        console.error(
+          "전체 학습 통계 조회 오류:",
+          response.status
+        );
       }
     } catch (error) {
       console.error("전체 학습 통계 조회 실패:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
+  // 연속 학습 일수 계산
+  const calculateStreak = (
+    data: StudyRecord[]
+  ): number => {
+    if (data.length === 0) return 0;
+
+    // 날짜 중복 제거 및 최신 날짜순 정렬
+    const uniqueDates = Array.from(
+      new Set(
+        data.map((record) => record.studyDate.slice(0, 10))
+      )
+    ).sort(
+      (a, b) =>
+        new Date(`${b}T00:00:00`).getTime() -
+        new Date(`${a}T00:00:00`).getTime()
+    );
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    const latestDate = new Date(
+      `${uniqueDates[0]}T00:00:00`
+    );
+
+    // 마지막 학습일이 어제보다 이전이면 0일
+    if (latestDate < yesterday) {
+      return 0;
+    }
+
+    let streak = 1;
+    let current = latestDate;
+
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const prev = new Date(
+        `${uniqueDates[i]}T00:00:00`
+      );
+
+      const diffDays = Math.round(
+        (current.getTime() - prev.getTime()) /
+          (1000 * 60 * 60 * 24)
+      );
+
+      if (diffDays === 1) {
+        streak++;
+        current = prev;
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  };
+
+  // 학습 기록 API 조회
+  const fetchStudyStreak = async (token: string) => {
+    try {
+      const response = await fetch(
+        `${BASE_API_URL}/study/records`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `학습 기록 조회 오류: ${response.status}`
+        );
+      }
+
+      const data: StudyRecord[] = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error(
+          "학습 기록 데이터 형식이 올바르지 않습니다."
+        );
+      }
+
+      const currentStreak = calculateStreak(data);
+
+      setStreak(currentStreak);
+    } catch (error) {
+      console.error("연속 학습 일수 조회 실패:", error);
+      setStreak(0);
+    }
+  };
+
+  // 로그아웃
   const handleLogout = () => {
     localStorage.removeItem("token");
     alert("로그아웃되었습니다.");
@@ -147,26 +265,29 @@ const MainSelectView: React.FC<{
     );
   }
 
+  // 메인 선택 항목
   const items: SelectItem[] = [
     {
       id: "level",
-      title: "급수별 학습",
-      description: `전체 단어 수: ${overviewStats?.totalWords || 0}개\n학습한 단어: ${overviewStats?.studiedWords || 0}개\n진도율: ${overviewStats?.progress || 0}%`,
+      title: "📚 급수별 학습",
+      description: `전체 단어 수: ${overviewStats?.totalWords || 0}개
+학습한 단어: ${overviewStats?.studiedWords || 0}개
+진도율: ${overviewStats?.progress || 0}%`,
       onClick: () => navigate("/select/level"),
       buttonClassName:
         "bg-sakura text-white hover:opacity-90 transition-all",
     },
     {
       id: "history",
-      title: "학습 기록 확인",
-      description: `${overviewStats?.consecutiveDays || 0}일 연속 학습 중`,
+      title: "📊 학습 기록 확인",
+      description: `${streak}일 연속 학습 중`,
       onClick: () => navigate("/learning/history"),
       buttonClassName:
         "bg-sakura text-white hover:opacity-90 transition-all",
     },
     {
       id: "chatbot",
-      title: "AI 챗봇과 대화하기",
+      title: "🤖 AI 챗봇과 대화하기",
       description: "학습한 내용을 챗봇으로 확인하기",
       onClick: () => navigate("/learning/chatbot"),
       buttonClassName:
@@ -178,21 +299,12 @@ const MainSelectView: React.FC<{
     <SelectPage
       headerTitle="나의 학습"
       headerExtra={
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => navigate("/tutorial")}
-            className="px-4 py-2 text-sm text-sakura-dark border border-sakura-dark bg-white rounded-xl hover:bg-[#FFF5F7] transition-all"
-          >
-            튜토리얼
-          </button>
-
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm text-white bg-sakura rounded-xl hover:opacity-90 transition-all"
-          >
-            로그아웃
-          </button>
-        </div>
+        <button
+          onClick={() => navigate("/tutorial")}
+          className="px-4 py-2 text-sm text-sakura-dark border border-sakura-dark bg-white rounded-xl hover:bg-[#FFF5F7] transition-all"
+        >
+          튜토리얼
+        </button>
       }
       headerLeft={
         <button
@@ -217,11 +329,22 @@ const MainSelectView: React.FC<{
       }
       showBackButton={false}
       items={items}
+      footerContent={
+        <button
+          onClick={handleLogout}
+          className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-800 transition-colors"
+        >
+          로그아웃
+        </button>
+      }
     />
   );
 };
 
-// --- LevelSelectView ---
+// ==================================================
+// LevelSelectView
+// ==================================================
+
 const LevelSelectView: React.FC<{
   navigate: ReturnType<typeof useNavigate>;
 }> = ({ navigate }) => {
@@ -256,7 +379,10 @@ const LevelSelectView: React.FC<{
         const data = await response.json();
         setLevelStats(Array.isArray(data) ? data : []);
       } else {
-        console.error("급수별 학습 통계 응답 오류:", response.status);
+        console.error(
+          "급수별 학습 통계 응답 오류:",
+          response.status
+        );
       }
     } catch (error) {
       console.error("급수별 학습 통계 조회 실패:", error);
@@ -290,7 +416,9 @@ const LevelSelectView: React.FC<{
       items={displayLevels.map((stat) => ({
         id: stat.level,
         title: stat.level,
-        description: `전체 단어: ${stat.totalWords}개\n학습한 단어: ${stat.studiedWords}개\n진도율: ${stat.progress}%`,
+        description: `전체 단어: ${stat.totalWords}개
+학습한 단어: ${stat.studiedWords}개
+진도율: ${stat.progress}%`,
         onClick: () =>
           navigate("/select/part", {
             state: { level: stat.level },
@@ -302,7 +430,10 @@ const LevelSelectView: React.FC<{
   );
 };
 
-// --- PartSelectView ---
+// ==================================================
+// PartSelectView
+// ==================================================
+
 const PartSelectView: React.FC<{
   navigate: ReturnType<typeof useNavigate>;
   location: ReturnType<typeof useLocation>;
@@ -313,9 +444,11 @@ const PartSelectView: React.FC<{
   const level = location.state?.level;
 
   const [isAuthorized, setIsAuthorized] = useState(false);
+
   const [incorrectCounts, setIncorrectCounts] = useState<
     Record<string, IncorrectWordCount>
   >({});
+
   const [partStats, setPartStats] = useState<PartStat[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -349,7 +482,9 @@ const PartSelectView: React.FC<{
 
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
-        setPartStats(statsData);
+        setPartStats(
+          Array.isArray(statsData) ? statsData : []
+        );
       }
 
       const counts: Record<string, IncorrectWordCount> = {};
@@ -357,7 +492,7 @@ const PartSelectView: React.FC<{
       for (const part of partData) {
         try {
           const sentenceResponse = await fetch(
-            `${BASE_API_URL}/study/incorrect/count?level=${level}&part=${part.backendValue}&studyType=sentence`,
+            `${BASE_API_URL}/study/incorrect/count?level=${level}&part=${encodeURIComponent(part.backendValue)}&studyType=sentence`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -365,13 +500,19 @@ const PartSelectView: React.FC<{
             }
           );
 
+          if (!sentenceResponse.ok) {
+            throw new Error(
+              `예문 오답 조회 오류: ${sentenceResponse.status}`
+            );
+          }
+
           const sentenceData = await sentenceResponse.json();
 
           let conjugationCount = 0;
 
           if (part.hasConjugation) {
             const conjugationResponse = await fetch(
-              `${BASE_API_URL}/study/incorrect/count?level=${level}&part=${part.backendValue}&studyType=conjugation`,
+              `${BASE_API_URL}/study/incorrect/count?level=${level}&part=${encodeURIComponent(part.backendValue)}&studyType=conjugation`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -379,7 +520,15 @@ const PartSelectView: React.FC<{
               }
             );
 
-            const conjugationData = await conjugationResponse.json();
+            if (!conjugationResponse.ok) {
+              throw new Error(
+                `활용형 오답 조회 오류: ${conjugationResponse.status}`
+              );
+            }
+
+            const conjugationData =
+              await conjugationResponse.json();
+
             conjugationCount = conjugationData.count || 0;
           }
 
@@ -416,11 +565,13 @@ const PartSelectView: React.FC<{
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg mb-4">급수를 선택해주세요.</div>
+          <div className="text-lg mb-4">
+            급수를 선택해주세요.
+          </div>
 
           <button
             onClick={() => navigate("/select/level")}
-            className="px-4 py-2 bg-sakura text-white rounded-lg hover:opacity-90 transition-all"
+            className="px-4 py-2 text-sm text-white bg-sakura border border-sakura rounded-xl hover:opacity-90 transition-all"
           >
             급수 선택하러 가기
           </button>
@@ -459,7 +610,9 @@ const PartSelectView: React.FC<{
 
   const topParts =
     maxIncorrect > 0
-      ? partTotals.filter((part) => part.total === maxIncorrect)
+      ? partTotals.filter(
+          (part) => part.total === maxIncorrect
+        )
       : [];
 
   const primaryTarget = topParts[0];
@@ -473,7 +626,9 @@ const PartSelectView: React.FC<{
         <div className="bg-[#FFF5F7] rounded-xl p-3.5 text-left space-y-2.5">
           <p className="text-sm text-gray-800 leading-relaxed">
             <span className="font-bold text-sakura-dark">
-              {topParts.map((item) => item.part.title).join(" · ")}
+              {topParts
+                .map((item) => item.part.title)
+                .join(" · ")}
             </span>
             에서 틀린 단어가 가장 많아요! (총{" "}
             <span className="font-bold text-sakura-dark">
@@ -491,7 +646,8 @@ const PartSelectView: React.FC<{
                   level,
                   partId: primaryTarget.part.backendValue,
                   studyType:
-                    primaryTarget.sentence >= primaryTarget.conjugation
+                    primaryTarget.sentence >=
+                    primaryTarget.conjugation
                       ? "sentence"
                       : "conjugation",
                   retryMode: true,
@@ -508,9 +664,14 @@ const PartSelectView: React.FC<{
           <p className="text-sm text-gray-700 leading-relaxed">
             아직 {level} 급수에서 틀린 단어가 없어요!
             <br />
-            <span className="font-bold text-sakura-dark">동사</span> 또는{" "}
-            <span className="font-bold text-sakura-dark">명사</span>부터
-            차근차근 학습을 시작해보세요.
+            <span className="font-bold text-sakura-dark">
+              동사
+            </span>{" "}
+            또는{" "}
+            <span className="font-bold text-sakura-dark">
+              명사
+            </span>
+            부터 차근차근 학습을 시작해보세요.
           </p>
         </div>
       ),
@@ -526,7 +687,9 @@ const PartSelectView: React.FC<{
     return {
       id: part.id,
       title: part.title,
-      description: `전체 단어: ${stat?.totalWords || part.wordCount}개\n학습한 단어: ${stat?.studiedWords || 0}개\n진도율: ${stat?.progress || 0}%`,
+      description: `전체 단어: ${stat?.totalWords || part.wordCount}개
+학습한 단어: ${stat?.studiedWords || 0}개
+진도율: ${stat?.progress || 0}%`,
       customContent: (
         <div className="space-y-3">
           <button
@@ -575,7 +738,10 @@ const PartSelectView: React.FC<{
   );
 };
 
-// --- Select ---
+// ==================================================
+// Select
+// ==================================================
+
 const Select: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -600,7 +766,9 @@ const Select: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-lg text-red-500">잘못된 접근입니다.</div>
+      <div className="text-lg text-red-500">
+        잘못된 접근입니다.
+      </div>
     </div>
   );
 };
