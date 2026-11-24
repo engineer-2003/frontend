@@ -1,5 +1,11 @@
 // src/pages/learning/Study.tsx
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import StudyPageComponent from "../../components/StudyPage";
 import { useStudySession } from "../../hooks/useStudySession";
@@ -46,6 +52,10 @@ export interface StudyOption {
   label: string;
 }
 
+type SentencePhase = "learning" | "test";
+
+const WORDS_PER_SET = 10;
+
 const shuffle = <T,>(arr: T[]): T[] =>
   [...arr].sort(() => Math.random() - 0.5);
 
@@ -63,10 +73,16 @@ const Study: React.FC = () => {
 
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [problemStep, setProblemStep] = useState(0);
+
   const sessionStartedRef = useRef(false);
 
   const [currentFormIndex, setCurrentFormIndex] = useState(0);
   const [availableForms, setAvailableForms] = useState<string[]>([]);
+
+  const [sentencePhase, setSentencePhase] =
+    useState<SentencePhase>("learning");
+
+  const [batchStartIndex, setBatchStartIndex] = useState(0);
 
   const [currentProblem, setCurrentProblem] = useState<
     ConjugationProblem | SentenceProblem | null
@@ -86,6 +102,7 @@ const Study: React.FC = () => {
           (word) => word.forms && Object.keys(word.forms).length > 0
         );
       }
+
       return wordsData;
     },
     [studyType]
@@ -132,17 +149,26 @@ const Study: React.FC = () => {
     [BASE_API_URL, studyType]
   );
 
+  // 학습 세션 초기화
+  useEffect(() => {
+    sessionStartedRef.current = false;
+  }, [level, partId, isRetryMode, studyType]);
+
   useEffect(() => {
     if (words.length > 0 && !sessionStartedRef.current) {
       sessionStartedRef.current = true;
+
       setCurrentWordIndex(0);
       setProblemStep(0);
+      setBatchStartIndex(0);
+      setSentencePhase("learning");
 
       if (studyType === "conjugation" && words[0].forms) {
         const firstWordForms = Object.keys(words[0].forms);
 
         setAvailableForms(firstWordForms);
         setCurrentFormIndex(0);
+
         loadProblem(words[0].id, firstWordForms[0]);
       } else {
         loadProblem(words[0].id);
@@ -154,11 +180,14 @@ const Study: React.FC = () => {
     }
   }, [words, loadProblem, studySession.startStudySession, studyType]);
 
-  useEffect(() => {
-    sessionStartedRef.current = false;
-  }, [level, partId, isRetryMode, studyType]);
-
   const currentWord = words[currentWordIndex];
+
+  const currentSetCount = Math.min(
+    WORDS_PER_SET,
+    Math.max(0, words.length - batchStartIndex)
+  );
+
+  const currentSetPosition = currentWordIndex - batchStartIndex;
 
   // 선택지 생성
   const options = useMemo<StudyOption[]>(() => {
@@ -204,8 +233,6 @@ const Study: React.FC = () => {
 
     if (!correctAnswer) return [];
 
-    // 실제 정답값은 word로 유지하고,
-    // 화면에는 reading을 표시합니다.
     const wordOptions = words
       .filter((word) => word.word)
       .map((word) => ({
@@ -230,7 +257,7 @@ const Study: React.FC = () => {
       uniqueOptions.filter(
         (option) => option.value !== correctAnswer
       )
-    ).slice(0, 3);
+    ).slice(0, 5);
 
     return shuffle([correctOption, ...distractors]);
   }, [currentProblem, studyType, words, currentWord, problemStep]);
@@ -248,15 +275,12 @@ const Study: React.FC = () => {
             ? (currentProblem as ConjugationProblem).formType
             : "";
 
-        const result: CheckAnswerResponse =
-          await studySession.checkAnswerWithSession(
-            currentWord.id,
-            answer,
-            formType,
-            studyType
-          );
-
-        return result;
+        return await studySession.checkAnswerWithSession(
+          currentWord.id,
+          answer,
+          formType,
+          studyType
+        );
       } catch (err) {
         throw new Error(
           err instanceof Error
@@ -273,10 +297,66 @@ const Study: React.FC = () => {
     ]
   );
 
-  // 다음 문제로 이동
+  // 다음 문제
   const handleNext = useCallback(async () => {
     if (words.length === 0) return;
 
+    // 예문 학습
+    if (studyType === "sentence") {
+      // 단어 학습 단계
+      if (sentencePhase === "learning") {
+        const nextIndex = currentWordIndex + 1;
+
+        if (nextIndex < batchStartIndex + currentSetCount) {
+          setCurrentWordIndex(nextIndex);
+          setProblemStep((prev) => prev + 1);
+          await loadProblem(words[nextIndex].id);
+          return;
+        }
+
+        // 학습 완료 후 테스트 시작
+        setSentencePhase("test");
+        setCurrentWordIndex(batchStartIndex);
+        setProblemStep((prev) => prev + 1);
+
+        await loadProblem(words[batchStartIndex].id);
+        return;
+      }
+
+      // 테스트 단계
+      const nextIndex = currentWordIndex + 1;
+
+      if (nextIndex < batchStartIndex + currentSetCount) {
+        setCurrentWordIndex(nextIndex);
+        setProblemStep((prev) => prev + 1);
+        await loadProblem(words[nextIndex].id);
+        return;
+      }
+
+      // 다음 10개 단어 세트
+      const nextBatchStart = batchStartIndex + WORDS_PER_SET;
+
+      if (nextBatchStart < words.length) {
+        setBatchStartIndex(nextBatchStart);
+        setCurrentWordIndex(nextBatchStart);
+        setSentencePhase("learning");
+        setProblemStep((prev) => prev + 1);
+
+        await loadProblem(words[nextBatchStart].id);
+        return;
+      }
+
+      // 전체 학습 완료
+      if (studySession.endStudySession) {
+        await studySession.endStudySession();
+      }
+
+      alert("모든 예문 학습을 완료했습니다!");
+      navigate(-1);
+      return;
+    }
+
+    // 기존 활용형 학습
     if (studyType === "conjugation") {
       if (availableForms.length === 0) return;
 
@@ -305,123 +385,102 @@ const Study: React.FC = () => {
           await studySession.endStudySession();
         }
 
-        alert("모든 문제를 완료했습니다! 🎉");
-        navigate(-1);
-      }
-    } else {
-      if (currentWordIndex + 1 < words.length) {
-        const nextIndex = currentWordIndex + 1;
-
-        setCurrentWordIndex(nextIndex);
-        setProblemStep((prev) => prev + 1);
-
-        await loadProblem(words[nextIndex].id);
-      } else {
-        if (studySession.endStudySession) {
-          await studySession.endStudySession();
-        }
-
-        alert("모든 문제를 완료했습니다! 🎉");
+        alert("모든 문제를 완료했습니다!");
         navigate(-1);
       }
     }
   }, [
     words,
-    availableForms,
+    studyType,
+    sentencePhase,
     currentWordIndex,
+    batchStartIndex,
+    currentSetCount,
+    availableForms,
     currentFormIndex,
     loadProblem,
-    studyType,
     studySession.endStudySession,
     navigate,
   ]);
 
-  // 이전 문제로 이동
+  // 이전 문제 (활용형 학습)
   const handlePrevious = useCallback(async () => {
-    if (words.length === 0) return;
+    if (words.length === 0 || studyType === "sentence") return;
 
-    if (studyType === "conjugation") {
-      if (availableForms.length === 0) return;
+    if (currentFormIndex > 0) {
+      const prevFormIndex = currentFormIndex - 1;
 
-      if (currentFormIndex > 0) {
-        const prevFormIndex = currentFormIndex - 1;
+      setCurrentFormIndex(prevFormIndex);
+      setProblemStep((prev) => prev + 1);
 
-        setCurrentFormIndex(prevFormIndex);
-        setProblemStep((prev) => prev + 1);
-
-        await loadProblem(
-          words[currentWordIndex].id,
-          availableForms[prevFormIndex]
-        );
-      } else {
-        const prevWordIndex =
-          currentWordIndex === 0
-            ? words.length - 1
-            : currentWordIndex - 1;
-
-        const prevWord = words[prevWordIndex];
-        const prevWordForms = Object.keys(prevWord.forms);
-        const lastFormIndex = prevWordForms.length - 1;
-
-        setCurrentWordIndex(prevWordIndex);
-        setCurrentFormIndex(lastFormIndex);
-        setAvailableForms(prevWordForms);
-        setProblemStep((prev) => prev + 1);
-
-        await loadProblem(
-          prevWord.id,
-          prevWordForms[lastFormIndex]
-        );
-      }
+      await loadProblem(
+        words[currentWordIndex].id,
+        availableForms[prevFormIndex]
+      );
     } else {
-      const prevIndex =
+      const prevWordIndex =
         currentWordIndex === 0
           ? words.length - 1
           : currentWordIndex - 1;
 
-      setCurrentWordIndex(prevIndex);
+      const prevWord = words[prevWordIndex];
+      const prevWordForms = Object.keys(prevWord.forms);
+      const lastFormIndex = prevWordForms.length - 1;
+
+      setCurrentWordIndex(prevWordIndex);
+      setCurrentFormIndex(lastFormIndex);
+      setAvailableForms(prevWordForms);
       setProblemStep((prev) => prev + 1);
 
-      await loadProblem(words[prevIndex].id);
+      await loadProblem(
+        prevWord.id,
+        prevWordForms[lastFormIndex]
+      );
     }
   }, [
     words,
-    availableForms,
+    studyType,
     currentWordIndex,
     currentFormIndex,
+    availableForms,
     loadProblem,
-    studyType,
   ]);
 
   const getTotalCount = useCallback(() => {
     if (words.length === 0) return 0;
 
-    if (studyType === "conjugation") {
-      return words.reduce(
-        (sum, word) => sum + Object.keys(word.forms).length,
-        0
-      );
+    if (studyType === "sentence") {
+      return currentSetCount;
     }
 
-    return words.length;
-  }, [words, studyType]);
+    return words.reduce(
+      (sum, word) =>
+        sum + Object.keys(word.forms || {}).length,
+      0
+    );
+  }, [words, studyType, currentSetCount]);
 
   const getCurrentPosition = useCallback(() => {
     if (words.length === 0) return 0;
 
-    if (studyType === "conjugation") {
-      let position = 0;
-
-      for (let i = 0; i < currentWordIndex; i++) {
-        position += Object.keys(words[i].forms).length;
-      }
-
-      position += currentFormIndex;
-      return position;
+    if (studyType === "sentence") {
+      return currentSetPosition;
     }
 
-    return currentWordIndex;
-  }, [words, currentWordIndex, currentFormIndex, studyType]);
+    let position = 0;
+
+    for (let i = 0; i < currentWordIndex; i++) {
+      position += Object.keys(words[i].forms || {}).length;
+    }
+
+    return position + currentFormIndex;
+  }, [
+    words,
+    studyType,
+    currentSetPosition,
+    currentWordIndex,
+    currentFormIndex,
+  ]);
 
   if (loading) {
     return (
@@ -446,11 +505,19 @@ const Study: React.FC = () => {
         {isRetryMode && error.includes("재학습할") && (
           <button
             onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-sakura-dark text-white rounded-lg hover:bg-sakura-darker transition"
+            className="px-4 py-2 bg-sakura-dark text-white rounded-lg"
           >
             돌아가기
           </button>
         )}
+      </div>
+    );
+  }
+
+  if (words.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-lg">학습할 단어가 없습니다.</div>
       </div>
     );
   }
@@ -463,13 +530,10 @@ const Study: React.FC = () => {
     );
   }
 
-  const studyTypeLabel =
-    studyType === "conjugation" ? "활용형" : "예문";
-
   const baseProps = {
-    key: `${currentWord.id}-${problemStep}`,
+    key: `${currentWord.id}-${problemStep}-${sentencePhase}`,
     title: `${level} > ${partId}${isRetryMode ? " (재학습)" : ""}`,
-    label: `${level} | ${partId} ${studyTypeLabel}`,
+    label: `${level} | ${partId}`,
     currentIndex: getCurrentPosition(),
     totalCount: getTotalCount(),
     onCheckAnswer: handleCheckAnswer,
@@ -483,45 +547,76 @@ const Study: React.FC = () => {
     placeholder: "",
   };
 
-  // 예문 학습
+  // 예문 학습 및 테스트
   if (studyType === "sentence") {
     const problem = currentProblem as SentenceProblem;
 
-    return (
-      <StudyPageComponent
-        {...baseProps}
-        additionalInfo={
-          <div className="space-y-3">
-            <div>
+    // 단어 학습
+    if (sentencePhase === "learning") {
+      return (
+        <StudyPageComponent
+          {...baseProps}
+          phase="learning"
+          additionalInfo={
+            <div className="space-y-3 text-center">
+              {/* 후리가나 */}
               <div className="text-sm text-gray-400">
-                {currentWord.word}
-              </div>
-
-              <div className="text-2xl font-bold text-gray-800">
                 {currentWord.reading}
               </div>
 
-              <div className="text-base font-medium text-gray-700 mt-1">
-                {problem.meaning}
+              {/* 학습 단어 */}
+              <div className="text-2xl font-bold text-gray-800">
+                {currentWord.word}
+              </div>
+
+              {/* 뜻 */}
+              <div className="text-base text-gray-700">
+                {currentWord.meaning}
+              </div>
+
+              {/* 예문 및 한국어 해석 */}
+              <div className="bg-gray-50 p-5 rounded-xl space-y-3">
+                <div className="text-lg font-medium text-gray-800 leading-relaxed">
+                  {currentWord.exampleSentence}
+                </div>
+
+                <div className="text-sm text-gray-500 leading-relaxed">
+                  {currentWord.exampleTranslation}
+                </div>
               </div>
             </div>
+          }
+        />
+      );
+    }
 
-            <div className="bg-gray-50 p-4 rounded-xl text-lg font-medium">
-              {problem.blankSentence}
+    // 예문 테스트
+    return (
+      <StudyPageComponent
+        {...baseProps}
+        phase="test"
+        additionalInfo={
+          <div className="space-y-4 text-center">
+            <div className="text-lg font-bold text-gray-800">
+              {problem.meaning}
             </div>
 
-            {problem.exampleTranslation && (
-              <div className="text-gray-500 text-sm italic">
+            <div className="bg-gray-50 p-5 rounded-xl space-y-3">
+              <div className="text-lg font-medium text-gray-800 leading-relaxed">
+                {problem.blankSentence}
+              </div>
+
+              <div className="border-t border-gray-200 pt-3 text-sm text-gray-500 leading-relaxed">
                 {problem.exampleTranslation}
               </div>
-            )}
+            </div>
           </div>
         }
       />
     );
   }
 
-  // 활용형 학습
+  // 기존 활용형 학습
   if (studyType === "conjugation") {
     const problem = currentProblem as ConjugationProblem;
 
