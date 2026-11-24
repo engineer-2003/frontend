@@ -269,7 +269,7 @@ const MainSelectView: React.FC<{
   const items: SelectItem[] = [
     {
       id: "level",
-      title: "📚 급수별 학습",
+      title: "급수별 학습",
       description: `전체 단어 수: ${overviewStats?.totalWords || 0}개
 학습한 단어: ${overviewStats?.studiedWords || 0}개
 진도율: ${overviewStats?.progress || 0}%`,
@@ -279,7 +279,7 @@ const MainSelectView: React.FC<{
     },
     {
       id: "history",
-      title: "📊 학습 기록 확인",
+      title: "학습 기록 확인",
       description: `${streak}일 연속 학습 중`,
       onClick: () => navigate("/learning/history"),
       buttonClassName:
@@ -287,7 +287,7 @@ const MainSelectView: React.FC<{
     },
     {
       id: "chatbot",
-      title: "🤖 AI 챗봇과 대화하기",
+      title: "AI 챗봇과 대화하기",
       description: "학습한 내용을 챗봇으로 확인하기",
       onClick: () => navigate("/learning/chatbot"),
       buttonClassName:
