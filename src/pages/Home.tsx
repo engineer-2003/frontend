@@ -35,6 +35,14 @@ export default function Home() {
           >
             회원 가입
           </button>
+
+          {/* 튜토리얼 버튼 */}
+          <button
+            onClick={() => navigate("/tutorial")}
+            className="w-full rounded-2xl border border-[#EBCBD3] bg-white py-3.5 text-base font-semibold text-[#A85D70] transition-colors duration-200 hover:bg-[#FFF0F3] active:opacity-90"
+          >
+            튜토리얼 보기
+          </button>
         </div>
 
         {/* 하단 텍스트 */}
