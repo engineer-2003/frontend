@@ -53,23 +53,57 @@ type PartStat = {
 const defaultLevels: string[] = ["N5", "N4", "N3", "N2", "N1"];
 
 const partData: Part[] = [
-  { id: "noun", title: "명사", backendValue: "명사", wordCount: 120, progress: 20, hasConjugation: false },
-  { id: "adj", title: "형용사", backendValue: "형용사", wordCount: 80, progress: 10, hasConjugation: true },
-  { id: "adjv", title: "형용동사", backendValue: "형용동사", wordCount: 60, progress: 5, hasConjugation: false },
-  { id: "verb", title: "동사", backendValue: "동사", wordCount: 150, progress: 30, hasConjugation: true },
+  {
+    id: "noun",
+    title: "명사",
+    backendValue: "명사",
+    wordCount: 120,
+    progress: 20,
+    hasConjugation: false,
+  },
+  {
+    id: "adj",
+    title: "형용사",
+    backendValue: "형용사",
+    wordCount: 80,
+    progress: 10,
+    hasConjugation: true,
+  },
+  {
+    id: "adjv",
+    title: "형용동사",
+    backendValue: "형용동사",
+    wordCount: 60,
+    progress: 5,
+    hasConjugation: false,
+  },
+  {
+    id: "verb",
+    title: "동사",
+    backendValue: "동사",
+    wordCount: 150,
+    progress: 30,
+    hasConjugation: true,
+  },
 ];
 
 // --- Sub-Components for Views ---
 
 // MainSelectView
-const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = ({ navigate }) => {
-  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
+const MainSelectView: React.FC<{
+  navigate: ReturnType<typeof useNavigate>;
+}> = ({ navigate }) => {
+  const BASE_API_URL =
+    import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8080";
+
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [overviewStats, setOverviewStats] = useState<OverviewStats | null>(null);
+  const [overviewStats, setOverviewStats] =
+    useState<OverviewStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       alert("로그인이 필요합니다.");
       navigate("/user/login");
@@ -81,10 +115,15 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
 
   const fetchOverviewStats = async (token: string) => {
     try {
-      const response = await fetch(`${BASE_API_URL}/study/stats/overview`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      
+      const response = await fetch(
+        `${BASE_API_URL}/study/stats/overview`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       if (response.ok) {
         const data = await response.json();
         setOverviewStats(data);
@@ -116,21 +155,24 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
       title: "급수별 학습",
       description: `전체 단어 수: ${overviewStats?.totalWords || 0}개\n학습한 단어: ${overviewStats?.studiedWords || 0}개\n진도율: ${overviewStats?.progress || 0}%`,
       onClick: () => navigate("/select/level"),
-      buttonClassName: "bg-sakura text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
+      buttonClassName:
+        "bg-sakura text-white hover:opacity-90 transition-all",
     },
     {
       id: "history",
       title: "학습 기록 확인",
       description: `${overviewStats?.consecutiveDays || 0}일 연속 학습 중`,
       onClick: () => navigate("/learning/history"),
-      buttonClassName: "bg-sakura text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
+      buttonClassName:
+        "bg-sakura text-white hover:opacity-90 transition-all",
     },
     {
       id: "chatbot",
       title: "AI 챗봇과 대화하기",
       description: "학습한 내용을 챗봇으로 확인하기",
       onClick: () => navigate("/learning/chatbot"),
-      buttonClassName: "bg-leaf text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0",
+      buttonClassName:
+        "bg-leaf text-white hover:opacity-90 transition-all",
     },
   ];
 
@@ -141,7 +183,7 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
         <div className="flex items-center space-x-2">
           <button
             onClick={handleLogout}
-            className="px-4 py-2 text-sm text-white bg-sakura rounded-xl hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+            className="px-4 py-2 text-sm text-white bg-sakura rounded-xl hover:opacity-90 transition-all"
           >
             로그아웃
           </button>
@@ -153,8 +195,18 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
           className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
           aria-label="홈으로"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            />
           </svg>
         </button>
       }
@@ -164,14 +216,20 @@ const MainSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = (
   );
 };
 
-const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = ({ navigate }) => {
-  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
+// LevelSelectView
+const LevelSelectView: React.FC<{
+  navigate: ReturnType<typeof useNavigate>;
+}> = ({ navigate }) => {
+  const BASE_API_URL =
+    import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8080";
+
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [levelStats, setLevelStats] = useState<LevelStat[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       alert("로그인이 필요합니다.");
       navigate("/user/login");
@@ -184,9 +242,11 @@ const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = 
   const fetchLevelStats = async (token: string) => {
     try {
       const response = await fetch(`${BASE_API_URL}/study/stats/level`, {
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setLevelStats(Array.isArray(data) ? data : []);
@@ -222,43 +282,47 @@ const LevelSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate> }> = 
     <SelectPage
       headerTitle="급수 선택"
       headerExtra="✿"
-      items={displayLevels.map((stat, index) => {
-        const gradientColors = [
-          "from-sakura-lighter to-sakura-light",
-          "from-sakura-light to-sakura",
-          "from-sakura to-sakura-dark",
-          "from-sakura-dark to-sakura-darker",
-          "from-sakura-darker to-[#C04A5F]",
-        ];
-        
-        return {
-          id: stat.level,
-          title: stat.level,
-          description: `전체 단어: ${stat.totalWords}개\n학습한 단어: ${stat.studiedWords}개\n진도율: ${stat.progress}%`,
-          onClick: () => navigate("/select/part", { state: { level: stat.level } }),
-          buttonClassName: `bg-gradient-to-r ${gradientColors[index % gradientColors.length]} text-white hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0`,
-        };
-      })}
+      items={displayLevels.map((stat) => ({
+        id: stat.level,
+        title: stat.level,
+        description: `전체 단어: ${stat.totalWords}개\n학습한 단어: ${stat.studiedWords}개\n진도율: ${stat.progress}%`,
+        onClick: () =>
+          navigate("/select/part", {
+            state: { level: stat.level },
+          }),
+        buttonClassName:
+          "bg-sakura text-white hover:opacity-90 transition-all",
+      }))}
     />
   );
 };
 
-const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; location: ReturnType<typeof useLocation> }> = ({ navigate, location }) => {
-  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
+// PartSelectView
+const PartSelectView: React.FC<{
+  navigate: ReturnType<typeof useNavigate>;
+  location: ReturnType<typeof useLocation>;
+}> = ({ navigate, location }) => {
+  const BASE_API_URL =
+    import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8080";
+
   const level = location.state?.level;
-  
+
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [incorrectCounts, setIncorrectCounts] = useState<Record<string, IncorrectWordCount>>({});
+  const [incorrectCounts, setIncorrectCounts] = useState<
+    Record<string, IncorrectWordCount>
+  >({});
   const [partStats, setPartStats] = useState<PartStat[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       alert("로그인이 필요합니다.");
       navigate("/user/login");
     } else {
       setIsAuthorized(true);
+
       if (level) {
         fetchData(token);
       } else {
@@ -270,42 +334,66 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
   const fetchData = async (token: string) => {
     try {
       // 품사별 통계 조회
-      const statsResponse = await fetch(`${BASE_API_URL}/study/stats/part?level=${level}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      
+      const statsResponse = await fetch(
+        `${BASE_API_URL}/study/stats/part?level=${level}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         setPartStats(statsData);
       }
 
-      // 틀린 단어 개수 조회
+      // 오늘의 학습 추천에 사용할 오답 개수 조회
       const counts: Record<string, IncorrectWordCount> = {};
+
       for (const part of partData) {
         try {
           const sentenceResponse = await fetch(
             `${BASE_API_URL}/study/incorrect/count?level=${level}&part=${part.backendValue}&studyType=sentence`,
-            { headers: { "Authorization": `Bearer ${token}` } }
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
           );
+
           const sentenceData = await sentenceResponse.json();
 
           let conjugationCount = 0;
+
           if (part.hasConjugation) {
             const conjugationResponse = await fetch(
               `${BASE_API_URL}/study/incorrect/count?level=${level}&part=${part.backendValue}&studyType=conjugation`,
-              { headers: { "Authorization": `Bearer ${token}` } }
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
             );
+
             const conjugationData = await conjugationResponse.json();
             conjugationCount = conjugationData.count || 0;
           }
 
           counts[part.id] = {
             sentence: sentenceData.count || 0,
-            conjugation: conjugationCount
+            conjugation: conjugationCount,
           };
         } catch (error) {
-          console.error(`틀린 단어 개수 조회 실패 - ${part.title}:`, error);
-          counts[part.id] = { sentence: 0, conjugation: 0 };
+          console.error(
+            `틀린 단어 개수 조회 실패 - ${part.title}:`,
+            error
+          );
+
+          counts[part.id] = {
+            sentence: 0,
+            conjugation: 0,
+          };
         }
       }
 
@@ -326,9 +414,10 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="text-lg mb-4">급수를 선택해주세요.</div>
+
           <button
             onClick={() => navigate("/select/level")}
-            className="px-4 py-2 bg-gradient-to-r from-sakura to-sakura-dark text-white rounded-lg hover:shadow-md transition-all"
+            className="px-4 py-2 bg-sakura text-white rounded-lg hover:opacity-90 transition-all"
           >
             급수 선택하러 가기
           </button>
@@ -347,19 +436,32 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
 
   // 최다 오답 품사 계산
   const partTotals = partData.map((part) => {
-    const c = incorrectCounts[part.id] || { sentence: 0, conjugation: 0 };
+    const count = incorrectCounts[part.id] || {
+      sentence: 0,
+      conjugation: 0,
+    };
+
     return {
       part,
-      sentence: c.sentence,
-      conjugation: c.conjugation,
-      total: c.sentence + c.conjugation,
+      sentence: count.sentence,
+      conjugation: count.conjugation,
+      total: count.sentence + count.conjugation,
     };
   });
 
-  const maxIncorrect = Math.max(...partTotals.map((p) => p.total), 0);
-  const topParts = maxIncorrect > 0 ? partTotals.filter((p) => p.total === maxIncorrect) : [];
+  const maxIncorrect = Math.max(
+    ...partTotals.map((part) => part.total),
+    0
+  );
+
+  const topParts =
+    maxIncorrect > 0
+      ? partTotals.filter((part) => part.total === maxIncorrect)
+      : [];
+
   const primaryTarget = topParts[0];
 
+  // 오늘의 학습 추천
   const recommendationItem: SelectItem = {
     id: "recommendation",
     title: "💡 오늘의 학습 추천",
@@ -368,25 +470,32 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
         <div className="bg-sakura/10 border border-sakura/30 rounded-xl p-3.5 text-left space-y-2.5">
           <p className="text-sm text-gray-800 leading-relaxed">
             <span className="font-bold text-sakura-dark">
-              {topParts.map((t) => t.part.title).join(" · ")}
+              {topParts.map((item) => item.part.title).join(" · ")}
             </span>
             에서 틀린 단어가 가장 많아요! (총{" "}
-            <span className="font-bold text-red-500">{maxIncorrect}개</span>)
+            <span className="font-bold text-sakura-dark">
+              {maxIncorrect}개
+            </span>
+            )
             <br />
             오답이 누적된 품사부터 집중 복습하는 것을 추천해요.
           </p>
+
           <button
             onClick={() =>
               navigate("/learning/study", {
                 state: {
-                  level: level,
+                  level,
                   partId: primaryTarget.part.backendValue,
-                  studyType: primaryTarget.sentence >= primaryTarget.conjugation ? "sentence" : "conjugation",
+                  studyType:
+                    primaryTarget.sentence >= primaryTarget.conjugation
+                      ? "sentence"
+                      : "conjugation",
                   retryMode: true,
                 },
               })
             }
-            className="w-full py-2.5 bg-sakura-dark text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all"
+            className="w-full py-2.5 bg-sakura text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all"
           >
             {primaryTarget.part.title} 틀린 단어 바로 복습하기 →
           </button>
@@ -397,16 +506,19 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
             아직 {level} 급수에서 틀린 단어가 없어요!
             <br />
             <span className="font-bold text-sakura-dark">동사</span> 또는{" "}
-            <span className="font-bold text-sakura-dark">명사</span>부터 차근차근 학습을 시작해보세요.
+            <span className="font-bold text-sakura-dark">명사</span>부터
+            차근차근 학습을 시작해보세요.
           </p>
         </div>
       ),
     onClick: () => {},
   };
 
+  // 품사별 학습 선택지
   const partItems: SelectItem[] = partData.map((part) => {
-    const counts = incorrectCounts[part.id] || { sentence: 0, conjugation: 0 };
-    const stat = partStats.find((s) => s.part === part.backendValue);
+    const stat = partStats.find(
+      (item) => item.part === part.backendValue
+    );
 
     return {
       id: part.id,
@@ -414,76 +526,36 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
       description: `전체 단어: ${stat?.totalWords || part.wordCount}개\n학습한 단어: ${stat?.studiedWords || 0}개\n진도율: ${stat?.progress || 0}%`,
       customContent: (
         <div className="space-y-3">
-          <div className="flex gap-2">
+          <button
+            onClick={() =>
+              navigate("/learning/study", {
+                state: {
+                  level,
+                  partId: part.backendValue,
+                  studyType: "sentence",
+                },
+              })
+            }
+            className="w-full px-3 py-3 bg-sakura text-white rounded-xl hover:opacity-90 transition-all font-semibold text-sm"
+          >
+            예문 학습
+          </button>
+
+          {part.hasConjugation && (
             <button
               onClick={() =>
                 navigate("/learning/study", {
                   state: {
-                    level: level,
+                    level,
                     partId: part.backendValue,
-                    studyType: "sentence",
+                    studyType: "conjugation",
                   },
                 })
               }
-              className="flex-1 px-3 py-3 bg-gradient-to-r from-sakura to-sakura-dark text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full px-3 py-3 bg-leaf text-white rounded-xl hover:opacity-90 transition-all font-semibold text-sm"
             >
-              예문 학습
+              활용형 학습
             </button>
-
-            {counts.sentence > 0 && (
-              <button
-                onClick={() =>
-                  navigate("/learning/study", {
-                    state: {
-                      level: level,
-                      partId: part.backendValue,
-                      studyType: "sentence",
-                      retryMode: true,
-                    },
-                  })
-                }
-                className="flex-1 px-3 py-3 bg-gradient-to-r from-sakura-dark to-sakura-darker text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
-              >
-                재학습 ({counts.sentence}개)
-              </button>
-            )}
-          </div>
-
-          {part.hasConjugation && (
-            <div className="flex gap-2">
-              <button
-                onClick={() =>
-                  navigate("/learning/study", {
-                    state: {
-                      level: level,
-                      partId: part.backendValue,
-                      studyType: "conjugation",
-                    },
-                  })
-                }
-                className="flex-1 px-3 py-3 bg-leaf text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
-              >
-                활용형 학습
-              </button>
-
-              {counts.conjugation > 0 && (
-                <button
-                  onClick={() =>
-                    navigate("/learning/study", {
-                      state: {
-                        level: level,
-                        partId: part.backendValue,
-                        studyType: "conjugation",
-                        retryMode: true,
-                      },
-                    })
-                  }
-                  className="flex-1 px-3 py-3 bg-gradient-to-r from-sakura-dark to-sakura-darker text-white rounded-xl hover:shadow-md transition-all font-semibold text-sm transform hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  재학습 ({counts.conjugation}개)
-                </button>
-              )}
-            </div>
           )}
         </div>
       ),
@@ -500,28 +572,34 @@ const PartSelectView: React.FC<{ navigate: ReturnType<typeof useNavigate>; locat
   );
 };
 
+// Select
 const Select: React.FC = () => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const currentPath = location.pathname;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
 
-    if (currentPath.endsWith("/select/main")) {
-        return <MainSelectView navigate={navigate} />;
-    }
-    
-    if (currentPath.endsWith("/select/level")) {
-        return <LevelSelectView navigate={navigate} />;
-    }
-    
-    if (currentPath.endsWith("/select/part")) {
-        return <PartSelectView navigate={navigate} location={location} />;
-    }
+  if (currentPath.endsWith("/select/main")) {
+    return <MainSelectView navigate={navigate} />;
+  }
 
+  if (currentPath.endsWith("/select/level")) {
+    return <LevelSelectView navigate={navigate} />;
+  }
+
+  if (currentPath.endsWith("/select/part")) {
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-            <div className="text-lg text-red-500">잘못된 접근입니다.</div>
-        </div>
+      <PartSelectView
+        navigate={navigate}
+        location={location}
+      />
     );
-}
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="text-lg text-red-500">잘못된 접근입니다.</div>
+    </div>
+  );
+};
 
 export default Select;
