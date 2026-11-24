@@ -35,8 +35,6 @@ interface StudyPageProps {
 }
 
 const StudyPage: React.FC<StudyPageProps> = ({
-  title,
-  subtitle,
   questionText,
   placeholder,
   currentIndex,
