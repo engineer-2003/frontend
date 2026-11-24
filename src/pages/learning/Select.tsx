@@ -279,7 +279,7 @@ const LevelSelectView: React.FC<{
   return (
     <SelectPage
       headerTitle="급수 선택"
-      headerExtra="✿"
+      headerExtra={null}
       items={displayLevels.map((stat) => ({
         id: stat.level,
         title: stat.level,
@@ -562,7 +562,7 @@ const PartSelectView: React.FC<{
   return (
     <SelectPage
       headerTitle={`${level} 품사 선택`}
-      headerExtra="✿"
+      headerExtra={null}
       items={[recommendationItem, ...partItems]}
     />
   );

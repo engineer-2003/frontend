@@ -30,8 +30,14 @@ interface WeeklySummary {
   headline: string;
   comment: string;
   points: SummaryPoint[];
-  streak: number;
 }
+
+type SummaryStatus =
+  | "waiting"
+  | "loading"
+  | "success"
+  | "empty"
+  | "error";
 
 const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -45,6 +51,13 @@ export default function History() {
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
   const [totalTime, setTotalTime] = useState(0);
+  const [streak, setStreak] = useState(0);
+
+  const [summaryStatus, setSummaryStatus] =
+    useState<SummaryStatus>("waiting");
+
+  const [summary, setSummary] =
+    useState<WeeklySummary | null>(null);
 
   const [weekData, setWeekData] = useState<DayStat[]>(
     DAYS.map((day) => ({
@@ -54,30 +67,6 @@ export default function History() {
       hasRecord: false,
     }))
   );
-
-  const [summary, setSummary] = useState<WeeklySummary>({
-    headline: "이번 주 학습을 시작해보세요!",
-    comment:
-      "아직 최근 7일간의 학습 기록이 없어요. 오늘 첫 단어 학습을 진행해보세요.",
-    points: [
-      {
-        icon: "trend",
-        title: "강점",
-        text: "꾸준한 학습 기록이 쌓이면 강점 요일을 분석해드려요.",
-      },
-      {
-        icon: "target",
-        title: "보완할 점",
-        text: "정답률이 낮은 요일의 단어를 복습 퀴즈로 다시 확인해보세요.",
-      },
-      {
-        icon: "bulb",
-        title: "다음 주 추천",
-        text: "하루 15문제씩 목표를 설정하고 연속 학습일을 늘려보세요.",
-      },
-    ],
-    streak: 0,
-  });
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -121,7 +110,9 @@ export default function History() {
       const hasRecentRecords = calculateWeekStats(sortedData);
 
       if (hasRecentRecords) {
-        fetchAiWeeklySummary(token);
+        await fetchAiWeeklySummary(token);
+      } else {
+        setSummaryStatus("empty");
       }
     } catch (error) {
       console.error("학습 기록 조회 오류:", error);
@@ -133,6 +124,7 @@ export default function History() {
 
   const fetchAiWeeklySummary = async (token: string) => {
     setAiLoading(true);
+    setSummaryStatus("loading");
 
     try {
       const response = await fetch(
@@ -145,34 +137,54 @@ export default function History() {
         }
       );
 
-      if (response.ok) {
-        const aiData = await response.json();
-
-        if (
-          aiData &&
-          aiData.headline &&
-          aiData.comment &&
-          Array.isArray(aiData.points)
-        ) {
-          setSummary((prev) => ({
-            ...prev,
-            headline: aiData.headline,
-            comment: aiData.comment,
-            points: aiData.points,
-          }));
-        }
+      if (!response.ok) {
+        throw new Error(`AI 요약 API 오류: ${response.status}`);
       }
-    } catch (error) {
-      console.error(
-        "AI 주간 요약 조회 오류 (기본 요약 유지):",
-        error
+
+      const aiData = await response.json();
+
+      if (
+        !aiData ||
+        typeof aiData.headline !== "string" ||
+        !aiData.headline.trim() ||
+        typeof aiData.comment !== "string" ||
+        !aiData.comment.trim() ||
+        !Array.isArray(aiData.points) ||
+        aiData.points.length !== 3
+      ) {
+        throw new Error("AI 요약 응답 형식이 올바르지 않습니다.");
+      }
+
+      const validIcons = ["trend", "target", "bulb"];
+
+      const validPoints = aiData.points.every(
+        (point: SummaryPoint) =>
+          validIcons.includes(point.icon) &&
+          typeof point.title === "string" &&
+          typeof point.text === "string" &&
+          point.text.trim().length > 0
       );
+
+      if (!validPoints) {
+        throw new Error("AI 요약 세부 항목이 올바르지 않습니다.");
+      }
+
+      setSummary({
+        headline: aiData.headline,
+        comment: aiData.comment,
+        points: aiData.points,
+      });
+
+      setSummaryStatus("success");
+    } catch (error) {
+      console.error("AI 주간 요약 조회 오류:", error);
+      setSummaryStatus("error");
     } finally {
       setAiLoading(false);
     }
   };
 
-  // 전체 기록 기준 연속 학습 일수 계산
+  // 전체 학습 기록 기준 연속 학습 일수 계산
   const calculateStreak = (data: StudyRecord[]): number => {
     if (data.length === 0) return 0;
 
@@ -215,6 +227,7 @@ export default function History() {
     return streak;
   };
 
+  // 오늘을 포함한 최근 7일 통계 계산
   const calculateWeekStats = (data: StudyRecord[]): boolean => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
@@ -235,7 +248,7 @@ export default function History() {
     });
 
     const totalSeconds = recentRecords.reduce(
-      (sum, record) => sum + record.studyTime,
+      (sum, record) => sum + (record.studyTime || 0),
       0
     );
 
@@ -252,7 +265,7 @@ export default function History() {
 
       const dayOfWeek = recordDate.getDay();
 
-      timeStats[dayOfWeek] += record.studyTime;
+      timeStats[dayOfWeek] += record.studyTime || 0;
       totalWords[dayOfWeek] += record.wordCount || 0;
       totalCorrects[dayOfWeek] += record.correctCount || 0;
     });
@@ -278,71 +291,10 @@ export default function History() {
 
     setWeekData(computedWeekData);
 
-    // 기본 요약 설정
-    const streak = calculateStreak(data);
-    const activeDays = computedWeekData.filter(
-      (day) => day.hasRecord
-    );
+    const currentStreak = calculateStreak(data);
+    setStreak(currentStreak);
 
-    if (activeDays.length > 0) {
-      const bestDay = [...activeDays].sort(
-        (a, b) => b.accuracy - a.accuracy
-      )[0];
-
-      const lowestDay = [...activeDays].sort(
-        (a, b) => a.accuracy - b.accuracy
-      )[0];
-
-      const mostStudiedDay = [...activeDays].sort(
-        (a, b) => b.studyTime - a.studyTime
-      )[0];
-
-      const recentLevel = recentRecords[0]?.levelName || "N4";
-      const recentPos =
-        recentRecords[0]?.partOfSpeech || "동사";
-
-      setSummary({
-        headline:
-          bestDay.accuracy >= 85
-            ? "이번 주 실력이 꾸준히 오르고 있어요!"
-            : "이번 주도 성실하게 학습을 이어갔어요!",
-
-        comment: `최근 7일 동안 총 ${activeDays.length}일 학습을 완료했습니다. ${mostStudiedDay.day}요일에 가장 오래 학습했고, ${bestDay.day}요일에 ${bestDay.accuracy}%로 가장 높은 정답률을 기록했어요.`,
-
-        points: [
-          {
-            icon: "trend",
-            title: "강점",
-            text: `${bestDay.day}요일에 정답률 ${bestDay.accuracy}%로 가장 뛰어난 집중력을 보여주었어요.`,
-          },
-          {
-            icon: "target",
-            title: "보완할 점",
-            text:
-              activeDays.length > 1 &&
-              lowestDay.day !== bestDay.day
-                ? `${lowestDay.day}요일 정답률(${lowestDay.accuracy}%)이 상대적으로 낮아요. 해당 날의 오답을 복습해보세요.`
-                : "학습한 단어를 다음 날 복습 퀴즈로 한 번 더 점검해보세요.",
-          },
-          {
-            icon: "bulb",
-            title: "다음 주 추천",
-            text: `최근 학습한 ${recentPos} · ${recentLevel} 단어를 하루 15문제씩 이어가면 목표 달성에 도움이 돼요.`,
-          },
-        ],
-
-        streak,
-      });
-
-      return true;
-    } else {
-      setSummary((prev) => ({
-        ...prev,
-        streak,
-      }));
-
-      return false;
-    }
+    return computedWeekData.some((day) => day.hasRecord);
   };
 
   if (!isAuthorized) {
@@ -503,12 +455,10 @@ export default function History() {
               주간 학습 통계
             </h3>
 
-            {/* 꺾은선 그래프 */}
             <svg
               viewBox={`0 0 ${W} ${H}`}
               className="w-full h-auto"
             >
-              {/* 가로 보조선 */}
               {[0, 0.5, 1].map((r, index) => (
                 <line
                   key={index}
@@ -522,7 +472,6 @@ export default function History() {
                 />
               ))}
 
-              {/* 그래프 영역 */}
               <path
                 d={areaPath}
                 fill="currentColor"
@@ -530,7 +479,6 @@ export default function History() {
                 className="text-sakura"
               />
 
-              {/* 그래프 선 */}
               <path
                 d={linePath}
                 fill="none"
@@ -541,7 +489,6 @@ export default function History() {
                 className="text-sakura-dark"
               />
 
-              {/* 그래프 점과 시간 라벨 */}
               {points.map((point, index) => (
                 <g key={index}>
                   <circle
@@ -569,7 +516,6 @@ export default function History() {
               ))}
             </svg>
 
-            {/* 요일 및 정답률 */}
             <div className="relative grid grid-cols-7 mt-1">
               {weekData.map((day, index) => (
                 <div
@@ -632,56 +578,80 @@ export default function History() {
 
               <div className="text-xl font-bold text-sakura-dark mt-1 h-7 flex items-center justify-center gap-1">
                 <Flame className="w-4 h-4 text-sakura-dark" />
-                {summary.streak}일
+                {streak}일
               </div>
             </div>
           </div>
 
           {/* AI 총평 */}
-          {aiLoading ? (
+          {summaryStatus === "loading" ? (
             <div className="bg-sakura/10 rounded-xl p-4 mb-4 animate-pulse space-y-2">
               <div className="h-4 bg-sakura/30 rounded w-2/3"></div>
               <div className="h-3 bg-sakura/20 rounded w-full"></div>
               <div className="h-3 bg-sakura/20 rounded w-5/6"></div>
             </div>
-          ) : (
-            <div className="bg-sakura/10 rounded-xl p-4 mb-4">
+          ) : summaryStatus === "empty" ? (
+            <div className="bg-sakura/10 rounded-xl p-5 mb-4 text-center">
               <div className="text-sm font-bold text-sakura-dark mb-2">
-                {summary.headline}
+                이번 주 학습을 시작해보세요!
               </div>
 
               <p className="text-xs text-gray-700 leading-relaxed">
-                {summary.comment}
+                아직 최근 7일간의 학습 기록이 없어요.
+                오늘 첫 단어 학습을 진행해보세요.
               </p>
             </div>
-          )}
+          ) : summaryStatus === "error" ? (
+            <div className="bg-sakura/10 rounded-xl p-5 mb-4 text-center">
+              <div className="text-sm font-bold text-sakura-dark mb-2">
+                AI 요약을 불러오지 못했어요.
+              </div>
 
-          {/* 세부 코멘트 */}
-          <ul className="space-y-3">
-            {summary.points.map((point, index) => (
-              <li
-                key={index}
-                className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl animate-slide-in"
-                style={{
-                  animationDelay: `${index * 50}ms`,
-                }}
-              >
-                <div className="flex-shrink-0 w-8 h-8 bg-[#d4f08e] rounded-full flex items-center justify-center">
-                  {renderIcon(point.icon)}
+              <p className="text-xs text-gray-700 leading-relaxed">
+                학습 통계는 정상적으로 확인할 수 있어요.
+                잠시 후 다시 방문해주세요.
+              </p>
+            </div>
+          ) : summaryStatus === "success" && summary ? (
+            <>
+              <div className="bg-sakura/10 rounded-xl p-4 mb-4">
+                <div className="text-sm font-bold text-sakura-dark mb-2">
+                  {summary.headline}
                 </div>
 
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-semibold text-gray-900">
-                    {point.title}
-                  </span>
+                <p className="text-xs text-gray-700 leading-relaxed">
+                  {summary.comment}
+                </p>
+              </div>
 
-                  <span className="text-xs text-gray-600 leading-relaxed">
-                    {point.text}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
+              {/* AI 세부 코멘트 */}
+              <ul className="space-y-3">
+                {summary.points.map((point, index) => (
+                  <li
+                    key={index}
+                    className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl animate-slide-in"
+                    style={{
+                      animationDelay: `${index * 50}ms`,
+                    }}
+                  >
+                    <div className="flex-shrink-0 w-8 h-8 bg-[#d4f08e] rounded-full flex items-center justify-center">
+                      {renderIcon(point.icon)}
+                    </div>
+
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-semibold text-gray-900">
+                        {point.title}
+                      </span>
+
+                      <span className="text-xs text-gray-600 leading-relaxed">
+                        {point.text}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
 
           <div className="text-center mt-4 pt-4">
             <span className="text-[11px] text-gray-400">
