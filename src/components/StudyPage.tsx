@@ -165,7 +165,7 @@ const StudyPage: React.FC<StudyPageProps> = ({
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white shadow-sm sticky top-0 z-10">
         <div className="px-4 py-3">
           <div className="flex justify-between items-center mb-3">
             <button
@@ -182,10 +182,10 @@ const StudyPage: React.FC<StudyPageProps> = ({
                 viewBox="0 0 24 24"
               >
                 <path
+                  d="M15 19l-7-7 7-7"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
                 />
               </svg>
 
@@ -204,10 +204,10 @@ const StudyPage: React.FC<StudyPageProps> = ({
                 onClick={handleToggleMode}
                 disabled={!!checkResult}
                 aria-label="입력 방식 전환"
-                className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all ${
+                className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
                   currentMode === "keyboard"
-                    ? "bg-sakura-dark text-white border-sakura-dark shadow-sm"
-                    : "bg-white text-gray-700 border-gray-200 hover:border-sakura"
+                    ? "bg-sakura-dark text-white shadow-sm"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 } ${
                   checkResult
                     ? "opacity-50 cursor-not-allowed"
@@ -233,9 +233,10 @@ const StudyPage: React.FC<StudyPageProps> = ({
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-md mx-auto">
-          <div className="bg-white rounded-3xl shadow-lg p-6 mb-6 border border-gray-100">
+          <div className="bg-white rounded-3xl shadow-lg p-6 mb-6">
+
             {/* Question */}
-            <div className="text-center mb-4">
+            <div className="text-center mb-6">
               <span className="inline-block px-3 py-1 rounded-full bg-sakura-lighter text-sakura-dark text-xs font-bold tracking-wider">
                 {label}
               </span>
@@ -247,20 +248,14 @@ const StudyPage: React.FC<StudyPageProps> = ({
 
             {/* Word and Example */}
             {additionalInfo && (
-              <div className="mb-6 py-4 border-y border-gray-100 text-center">
+              <div className="mb-6 py-4 text-center">
                 {additionalInfo}
               </div>
             )}
 
             {/* Answer Result */}
             {checkResult && (
-              <div
-                className={`mb-6 p-4 rounded-2xl text-center ${
-                  checkResult.correct
-                    ? "bg-gray-50 text-gray-800 border border-gray-200"
-                    : "bg-gray-50 text-gray-800 border border-gray-200"
-                }`}
-              >
+              <div className="mb-6 p-4 rounded-2xl text-center bg-gray-100 text-gray-800">
                 <div className="font-bold text-lg">
                   {checkResult.correct ? "정답입니다!" : "틀렸습니다."}
                 </div>
@@ -298,15 +293,15 @@ const StudyPage: React.FC<StudyPageProps> = ({
                       className={`
                         relative p-3 h-20 flex items-center justify-center
                         text-center rounded-2xl font-bold text-lg
-                        transition-all duration-200 border-2 shadow-sm
+                        transition-all duration-200 shadow-sm
                         ${
                           !checkResult
-                            ? "bg-white border-gray-100 text-gray-700 hover:border-sakura hover:shadow-md active:scale-95"
+                            ? "bg-gray-50 text-gray-700 hover:bg-sakura-lighter active:scale-95"
                             : isCorrectAnswer
-                            ? "bg-gray-700 border-gray-700 text-white cursor-default"
+                            ? "bg-gray-700 text-white cursor-default"
                             : isWrongSelection
-                            ? "bg-gray-200 border-gray-300 text-gray-600 cursor-not-allowed"
-                            : "bg-gray-50 border-gray-100 text-gray-300 opacity-50 cursor-not-allowed"
+                            ? "bg-gray-200 text-gray-600 cursor-not-allowed"
+                            : "bg-gray-50 text-gray-300 opacity-50 cursor-not-allowed"
                         }
                       `}
                     >
@@ -324,7 +319,7 @@ const StudyPage: React.FC<StudyPageProps> = ({
                   onKeyDown={handleKeyDown}
                   placeholder={placeholder || "정답을 입력하세요"}
                   disabled={!!checkResult}
-                  className="w-full border-2 border-gray-200 focus:border-sakura-dark focus:outline-none px-4 py-4 rounded-2xl text-center text-lg font-bold transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                  className="w-full bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sakura-dark px-4 py-4 rounded-2xl text-center text-lg font-bold transition-all disabled:bg-gray-100 disabled:text-gray-400"
                 />
 
                 <button

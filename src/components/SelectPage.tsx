@@ -32,9 +32,9 @@ const SelectPage: React.FC<SelectPageProps> = ({
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white sticky top-0 z-10">
         <div className="relative flex items-center justify-center px-4 py-4">
-          {/* 좌측 영역 - 뒤로가기 또는 커스텀 버튼 */}
+          {/* 좌측 영역 */}
           <div className="absolute left-4">
             {showBackButton ? (
               <button
@@ -85,7 +85,7 @@ const SelectPage: React.FC<SelectPageProps> = ({
           {items.map((item, index) => (
             <div
               key={item.id}
-              className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden animate-slide-in-up"
+              className="bg-white rounded-2xl overflow-hidden animate-slide-in-up"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="p-5">
@@ -124,7 +124,7 @@ const SelectPage: React.FC<SelectPageProps> = ({
                   !item.hideDefaultButton && (
                     <button
                       onClick={item.onClick}
-                      className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 transform active:scale-98 ${
+                      className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-98 ${
                         item.buttonClassName ||
                         "bg-sakura text-white hover:opacity-90"
                       }`}

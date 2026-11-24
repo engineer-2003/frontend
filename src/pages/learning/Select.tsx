@@ -87,9 +87,7 @@ const partData: Part[] = [
   },
 ];
 
-// --- Sub-Components for Views ---
-
-// MainSelectView
+// --- MainSelectView ---
 const MainSelectView: React.FC<{
   navigate: ReturnType<typeof useNavigate>;
 }> = ({ navigate }) => {
@@ -143,7 +141,7 @@ const MainSelectView: React.FC<{
 
   if (!isAuthorized || loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-lg">로딩 중...</div>
       </div>
     );
@@ -216,7 +214,7 @@ const MainSelectView: React.FC<{
   );
 };
 
-// LevelSelectView
+// --- LevelSelectView ---
 const LevelSelectView: React.FC<{
   navigate: ReturnType<typeof useNavigate>;
 }> = ({ navigate }) => {
@@ -262,7 +260,7 @@ const LevelSelectView: React.FC<{
 
   if (!isAuthorized || loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-lg">로딩 중...</div>
       </div>
     );
@@ -297,7 +295,7 @@ const LevelSelectView: React.FC<{
   );
 };
 
-// PartSelectView
+// --- PartSelectView ---
 const PartSelectView: React.FC<{
   navigate: ReturnType<typeof useNavigate>;
   location: ReturnType<typeof useLocation>;
@@ -333,7 +331,6 @@ const PartSelectView: React.FC<{
 
   const fetchData = async (token: string) => {
     try {
-      // 품사별 통계 조회
       const statsResponse = await fetch(
         `${BASE_API_URL}/study/stats/part?level=${level}`,
         {
@@ -348,7 +345,6 @@ const PartSelectView: React.FC<{
         setPartStats(statsData);
       }
 
-      // 오늘의 학습 추천에 사용할 오답 개수 조회
       const counts: Record<string, IncorrectWordCount> = {};
 
       for (const part of partData) {
@@ -411,7 +407,7 @@ const PartSelectView: React.FC<{
 
   if (!level) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-lg mb-4">급수를 선택해주세요.</div>
 
@@ -428,7 +424,7 @@ const PartSelectView: React.FC<{
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-lg">로딩 중...</div>
       </div>
     );
@@ -467,7 +463,7 @@ const PartSelectView: React.FC<{
     title: "💡 오늘의 학습 추천",
     customContent:
       maxIncorrect > 0 && primaryTarget ? (
-        <div className="bg-sakura/10 border border-sakura/30 rounded-xl p-3.5 text-left space-y-2.5">
+        <div className="bg-[#FFF5F7] rounded-xl p-3.5 text-left space-y-2.5">
           <p className="text-sm text-gray-800 leading-relaxed">
             <span className="font-bold text-sakura-dark">
               {topParts.map((item) => item.part.title).join(" · ")}
@@ -501,7 +497,7 @@ const PartSelectView: React.FC<{
           </button>
         </div>
       ) : (
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-left">
+        <div className="bg-gray-50 rounded-xl p-3.5 text-left">
           <p className="text-sm text-gray-700 leading-relaxed">
             아직 {level} 급수에서 틀린 단어가 없어요!
             <br />
@@ -572,7 +568,7 @@ const PartSelectView: React.FC<{
   );
 };
 
-// Select
+// --- Select ---
 const Select: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -596,7 +592,7 @@ const Select: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-lg text-red-500">잘못된 접근입니다.</div>
     </div>
   );
