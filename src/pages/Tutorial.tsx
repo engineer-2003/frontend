@@ -146,13 +146,6 @@ const Tutorial = () => {
           <span className="text-sm font-bold text-sakura-dark">
             튜토리얼 {step} / {totalSteps}
           </span>
-
-          <button
-            onClick={handleFinish}
-            className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
-          >
-            종료
-          </button>
         </div>
 
         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
@@ -178,15 +171,17 @@ const Tutorial = () => {
     previousLabel = "이전",
     nextLabel = "다음",
     onNext = handleNext,
+    onPrevious = handlePrevious,
   }: {
     previousLabel?: string;
     nextLabel?: string;
     onNext?: () => void;
+    onPrevious?: () => void;
   }) => (
     <div className="fixed bottom-0 left-0 right-0 px-4 pb-5 pt-4 bg-white shadow-[0_-4px_16px_rgba(0,0,0,0.06)] z-20">
       <div className="max-w-md mx-auto flex gap-3">
         <button
-          onClick={handlePrevious}
+          onClick={onPrevious}
           className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all"
         >
           {previousLabel}
@@ -246,6 +241,7 @@ const Tutorial = () => {
 
         <TutorialNavigation
           previousLabel="종료"
+          onPrevious={handleFinish}
           onNext={handleNext}
         />
       </div>
