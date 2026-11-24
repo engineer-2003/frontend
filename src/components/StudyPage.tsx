@@ -1,6 +1,7 @@
 // src/components/StudyPage.tsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import type { StudyOption } from "../pages/learning/Study";
 
 interface CheckAnswerResponse {
   correct: boolean;
@@ -23,11 +24,10 @@ interface StudyPageProps {
   onPrevious: () => void;
   showNavigationButtons?: boolean;
   additionalInfo?: React.ReactNode;
-  showHints?: boolean;
   currentWordId?: number;
   onAnswerResult?: (wordId: number, isCorrect: boolean) => void;
   onBackButtonClick?: () => Promise<void>;
-  options: string[];
+  options: StudyOption[];
   label?: string;
   inputMode?: "card" | "keyboard";
   onToggleInputMode?: () => void;
@@ -43,7 +43,6 @@ const StudyPage: React.FC<StudyPageProps> = ({
   onPrevious,
   showNavigationButtons = true,
   additionalInfo,
-  showHints = true,
   currentWordId,
   onAnswerResult,
   onBackButtonClick,
@@ -56,20 +55,21 @@ const StudyPage: React.FC<StudyPageProps> = ({
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [answer, setAnswer] = useState("");
-  const [checkResult, setCheckResult] = useState<CheckAnswerResponse | null>(null);
+  const [checkResult, setCheckResult] =
+    useState<CheckAnswerResponse | null>(null);
+
   const [isNavigating, setIsNavigating] = useState(false);
-  const [internalMode, setInternalMode] = useState<"card" | "keyboard">("card");
+  const [internalMode, setInternalMode] =
+    useState<"card" | "keyboard">("card");
 
   const currentMode = inputMode ?? internalMode;
 
-  // 문제 변경 시 상태 초기화
   useEffect(() => {
     setSelectedOption(null);
     setAnswer("");
     setCheckResult(null);
   }, [currentIndex, currentWordId]);
 
-  // 입력 방식 전환
   const handleToggleMode = () => {
     if (checkResult) return;
 
@@ -79,18 +79,19 @@ const StudyPage: React.FC<StudyPageProps> = ({
     if (onToggleInputMode) {
       onToggleInputMode();
     } else {
-      setInternalMode((prev) => (prev === "card" ? "keyboard" : "card"));
+      setInternalMode((prev) =>
+        prev === "card" ? "keyboard" : "card"
+      );
     }
   };
 
-  // 카드 선택
-  const handleOptionClick = async (option: string) => {
+  const handleOptionClick = async (option: StudyOption) => {
     if (checkResult || isNavigating) return;
 
-    setSelectedOption(option);
+    setSelectedOption(option.value);
 
     try {
-      const result = await onCheckAnswer(option);
+      const result = await onCheckAnswer(option.value);
       setCheckResult(result);
 
       if (onAnswerResult && currentWordId) {
@@ -102,10 +103,11 @@ const StudyPage: React.FC<StudyPageProps> = ({
     }
   };
 
-  // 키보드 입력 정답 확인
   const handleKeyboardSubmit = async () => {
     if (!answer.trim() || checkResult || isNavigating) {
-      if (!answer.trim()) alert("답을 입력해주세요.");
+      if (!answer.trim()) {
+        alert("답을 입력해주세요.");
+      }
       return;
     }
 
@@ -121,18 +123,12 @@ const StudyPage: React.FC<StudyPageProps> = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === "Enter" && !checkResult) {
       handleKeyboardSubmit();
     }
-  };
-
-  const handleNext = () => {
-    onNext();
-  };
-
-  const handlePrevious = () => {
-    onPrevious();
   };
 
   const handleBackButton = async () => {
@@ -156,6 +152,15 @@ const StudyPage: React.FC<StudyPageProps> = ({
 
   const progressPercentage =
     totalCount > 0 ? ((currentIndex + 1) / totalCount) * 100 : 0;
+
+  const correctOption = checkResult
+    ? options.find(
+        (option) => option.value === checkResult.correctAnswer
+      )
+    : undefined;
+
+  const correctAnswerLabel =
+    correctOption?.label || checkResult?.correctAnswer || "";
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -194,7 +199,6 @@ const StudyPage: React.FC<StudyPageProps> = ({
                 {currentIndex + 1} / {totalCount}
               </div>
 
-              {/* 입력 방식 전환 버튼 */}
               <button
                 type="button"
                 onClick={handleToggleMode}
@@ -229,97 +233,84 @@ const StudyPage: React.FC<StudyPageProps> = ({
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-md mx-auto">
-          {/* Question Card */}
           <div className="bg-white rounded-3xl shadow-lg p-6 mb-6 border border-gray-100">
+            {/* Question */}
             <div className="text-center mb-4">
-              <div className="flex items-center justify-center gap-2 mb-2 flex-wrap">
-                <span className="inline-block px-3 py-1 rounded-full bg-sakura-lighter text-sakura-dark text-xs font-bold tracking-wider">
-                  {label}
-                </span>
-              </div>
+              <span className="inline-block px-3 py-1 rounded-full bg-sakura-lighter text-sakura-dark text-xs font-bold tracking-wider">
+                {label}
+              </span>
 
               <h2 className="text-xl font-bold text-gray-800 leading-tight mt-3">
                 {questionText}
               </h2>
             </div>
 
+            {/* Word and Example */}
             {additionalInfo && (
               <div className="mb-6 py-4 border-y border-gray-100 text-center">
                 {additionalInfo}
               </div>
             )}
 
-            {/* 정답 및 오답 결과 */}
+            {/* Answer Result */}
             {checkResult && (
-              <div className="mb-6 p-4 rounded-2xl bg-gray-50 text-gray-700 border border-gray-200 text-center">
-                <div className="font-bold text-lg mb-1">
-                  {checkResult.correct ? "정답입니다!" : "정답을 확인해보세요."}
+              <div
+                className={`mb-6 p-4 rounded-2xl text-center ${
+                  checkResult.correct
+                    ? "bg-gray-50 text-gray-800 border border-gray-200"
+                    : "bg-gray-50 text-gray-800 border border-gray-200"
+                }`}
+              >
+                <div className="font-bold text-lg">
+                  {checkResult.correct ? "정답입니다!" : "틀렸습니다."}
                 </div>
 
-                {checkResult.message && (
-                  <p className="text-sm font-medium">
-                    {checkResult.message}
-                  </p>
-                )}
-
-                {/* 오답일 경우 정답 표시 */}
                 {!checkResult.correct && (
-                  <div className="mt-3 p-3 rounded-xl bg-white border border-gray-200">
-                    <div className="text-xs text-gray-500 mb-1">
-                      정답
-                    </div>
-                    <div className="text-lg font-bold text-sakura-dark">
-                      {checkResult.correctAnswer}
-                    </div>
+                  <div className="mt-2 text-base font-bold">
+                    정답: {correctAnswerLabel}
                   </div>
-                )}
-
-                {showHints && !checkResult.correct && checkResult.hint && (
-                  <p className="text-sm mt-2 font-medium text-gray-600">
-                    {checkResult.hint}
-                  </p>
                 )}
               </div>
             )}
 
-            {/* 카드 선택 모드 vs 키보드 입력 모드 */}
+            {/* Card Selection */}
             {currentMode === "card" ? (
               <div className="grid grid-cols-2 gap-3 mb-6">
-                {options.map((option, index) => {
-                  const isSelected = selectedOption === option;
+                {options.slice(0, 4).map((option, index) => {
+                  const isSelected =
+                    selectedOption === option.value;
+
                   const isCorrectAnswer =
-                    !!checkResult && option === checkResult.correctAnswer;
+                    !!checkResult &&
+                    option.value === checkResult.correctAnswer;
+
                   const isWrongSelection =
-                    !!checkResult && !checkResult.correct && isSelected;
-
-                  let optionClass =
-                    "bg-white border-gray-100 text-gray-700 hover:border-sakura hover:shadow-md active:scale-95";
-
-                  if (checkResult) {
-                    if (isCorrectAnswer) {
-                      optionClass =
-                        "bg-sakura-lighter border-sakura text-sakura-dark cursor-default";
-                    } else if (isWrongSelection) {
-                      optionClass =
-                        "bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed";
-                    } else {
-                      optionClass =
-                        "bg-gray-50 border-gray-100 text-gray-300 opacity-50 cursor-not-allowed";
-                    }
-                  }
+                    !!checkResult &&
+                    !checkResult.correct &&
+                    isSelected;
 
                   return (
                     <button
-                      key={`${option}-${index}`}
+                      key={`${option.value}-${index}`}
+                      type="button"
                       onClick={() => handleOptionClick(option)}
                       disabled={!!checkResult}
                       className={`
-                        relative p-3 h-20 flex items-center justify-center text-center rounded-2xl font-bold text-lg transition-all duration-200
-                        border-2 shadow-sm
-                        ${optionClass}
+                        relative p-3 h-20 flex items-center justify-center
+                        text-center rounded-2xl font-bold text-lg
+                        transition-all duration-200 border-2 shadow-sm
+                        ${
+                          !checkResult
+                            ? "bg-white border-gray-100 text-gray-700 hover:border-sakura hover:shadow-md active:scale-95"
+                            : isCorrectAnswer
+                            ? "bg-gray-700 border-gray-700 text-white cursor-default"
+                            : isWrongSelection
+                            ? "bg-gray-200 border-gray-300 text-gray-600 cursor-not-allowed"
+                            : "bg-gray-50 border-gray-100 text-gray-300 opacity-50 cursor-not-allowed"
+                        }
                       `}
                     >
-                      {option}
+                      {option.label}
                     </button>
                   );
                 })}
@@ -342,26 +333,26 @@ const StudyPage: React.FC<StudyPageProps> = ({
                   disabled={!answer.trim() || !!checkResult}
                   className="w-full py-3.5 bg-sakura text-white font-bold rounded-2xl shadow-sm hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {checkResult ? "정답 확인 완료" : "정답 확인"}
+                  정답 확인
                 </button>
               </div>
             )}
 
-            {/* Navigation Buttons */}
+            {/* Navigation */}
             {showNavigationButtons && (
               <div className="flex gap-3">
                 <button
-                  onClick={handlePrevious}
+                  onClick={onPrevious}
                   className="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-colors"
                 >
                   이전
                 </button>
 
                 <button
-                  onClick={handleNext}
+                  onClick={onNext}
                   className="flex-1 py-4 bg-sakura-dark text-white font-bold rounded-2xl shadow-sm hover:opacity-90 transition-opacity"
                 >
-                  {checkResult?.correct ? "다음 문제" : "건너뛰기"}
+                  다음 문제
                 </button>
               </div>
             )}

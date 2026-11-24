@@ -6,7 +6,6 @@ import { useStudySession } from "../../hooks/useStudySession";
 import { useWordsFetch } from "../../hooks/useWordsFetch";
 import type { WordDto } from "../../hooks/useWordsFetch";
 
-// --- Type Definitions ---
 interface ConjugationProblem {
   id: number;
   word: string;
@@ -42,10 +41,18 @@ interface CheckAnswerResponse {
   error?: string;
 }
 
-const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+export interface StudyOption {
+  value: string;
+  label: string;
+}
+
+const shuffle = <T,>(arr: T[]): T[] =>
+  [...arr].sort(() => Math.random() - 0.5);
 
 const Study: React.FC = () => {
-  const BASE_API_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8080";
+  const BASE_API_URL =
+    import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8080";
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -58,14 +65,13 @@ const Study: React.FC = () => {
   const [problemStep, setProblemStep] = useState(0);
   const sessionStartedRef = useRef(false);
 
-  // 활용형 학습에만 필요한 상태
   const [currentFormIndex, setCurrentFormIndex] = useState(0);
   const [availableForms, setAvailableForms] = useState<string[]>([]);
 
-  // 현재 문제 상태
-  const [currentProblem, setCurrentProblem] = useState<ConjugationProblem | SentenceProblem | null>(null);
+  const [currentProblem, setCurrentProblem] = useState<
+    ConjugationProblem | SentenceProblem | null
+  >(null);
 
-  // 커스텀 훅 사용
   const studySession = useStudySession({
     level,
     partId,
@@ -73,11 +79,12 @@ const Study: React.FC = () => {
     isRetryMode,
   });
 
-  // 활용형 학습 필터링 로직
   const filterConjugatableWords = useCallback(
     (wordsData: WordDto[]) => {
       if (studyType === "conjugation") {
-        return wordsData.filter((word) => word.forms && Object.keys(word.forms).length > 0);
+        return wordsData.filter(
+          (word) => word.forms && Object.keys(word.forms).length > 0
+        );
       }
       return wordsData;
     },
@@ -92,15 +99,16 @@ const Study: React.FC = () => {
     filterWords: filterConjugatableWords,
   });
 
-  // 문제 로드 함수
   const loadProblem = useCallback(
     async (wordId: number, formType?: string) => {
       try {
-        let url;
+        let url: string;
 
         if (studyType === "conjugation") {
           url = formType
-            ? `${BASE_API_URL}/study/${wordId}/form-problem?formType=${encodeURIComponent(formType)}`
+            ? `${BASE_API_URL}/study/${wordId}/form-problem?formType=${encodeURIComponent(
+                formType
+              )}`
             : `${BASE_API_URL}/study/${wordId}/form-problem`;
         } else {
           url = `${BASE_API_URL}/study/${wordId}/sentence-problem`;
@@ -112,7 +120,9 @@ const Study: React.FC = () => {
           throw new Error("문제를 가져오는데 실패했습니다.");
         }
 
-        const problemData: ConjugationProblem | SentenceProblem = await response.json();
+        const problemData: ConjugationProblem | SentenceProblem =
+          await response.json();
+
         setCurrentProblem(problemData);
       } catch (err) {
         console.error("문제 로드 중 오류:", err);
@@ -122,7 +132,6 @@ const Study: React.FC = () => {
     [BASE_API_URL, studyType]
   );
 
-  // 첫 번째 단어 로드 및 세션 시작
   useEffect(() => {
     if (words.length > 0 && !sessionStartedRef.current) {
       sessionStartedRef.current = true;
@@ -131,6 +140,7 @@ const Study: React.FC = () => {
 
       if (studyType === "conjugation" && words[0].forms) {
         const firstWordForms = Object.keys(words[0].forms);
+
         setAvailableForms(firstWordForms);
         setCurrentFormIndex(0);
         loadProblem(words[0].id, firstWordForms[0]);
@@ -144,47 +154,88 @@ const Study: React.FC = () => {
     }
   }, [words, loadProblem, studySession.startStudySession, studyType]);
 
-  // 학습 조건 변경 시 리셋
   useEffect(() => {
     sessionStartedRef.current = false;
   }, [level, partId, isRetryMode, studyType]);
 
   const currentWord = words[currentWordIndex];
 
-  // 현재 문제의 정답 및 오답 보기 생성
-  const options = useMemo(() => {
-    if (!currentProblem) return [];
+  // 선택지 생성
+  const options = useMemo<StudyOption[]>(() => {
+    if (!currentProblem || !currentWord) return [];
 
     if (studyType === "conjugation") {
       const problem = currentProblem as ConjugationProblem;
       const correctAnswer = problem.correctAnswer;
 
-      const sameWordForms = currentWord?.forms
-        ? Object.values(currentWord.forms).filter((f) => f && f !== correctAnswer)
+      const sameWordForms = currentWord.forms
+        ? Object.values(currentWord.forms).filter(
+            (form) => form && form !== correctAnswer
+          )
         : [];
 
       const otherWordForms = words
-        .flatMap((w) => (w.forms ? Object.values(w.forms) : []))
-        .filter((f) => f && f !== correctAnswer && !sameWordForms.includes(f));
+        .flatMap((word) =>
+          word.forms ? Object.values(word.forms) : []
+        )
+        .filter(
+          (form) =>
+            form &&
+            form !== correctAnswer &&
+            !sameWordForms.includes(form)
+        );
 
-      const distractors = [...shuffle(sameWordForms), ...shuffle(otherWordForms)].slice(0, 5);
-      return shuffle([correctAnswer, ...distractors]);
-    } else {
-      const problem = currentProblem as SentenceProblem;
-      const correctAnswer = problem.correctAnswers?.[0] || currentWord?.word || "";
+      const distractors = [
+        ...shuffle(sameWordForms),
+        ...shuffle(otherWordForms),
+      ].slice(0, 3);
 
-      if (!correctAnswer) return [];
-
-      const otherWords = Array.from(
-        new Set(words.map((w) => w.word).filter((w) => w && w !== correctAnswer))
+      return shuffle(
+        [correctAnswer, ...distractors].map((value) => ({
+          value,
+          label: value,
+        }))
       );
-
-      const distractors = shuffle(otherWords).slice(0, 5);
-      return shuffle([correctAnswer, ...distractors]);
     }
+
+    const problem = currentProblem as SentenceProblem;
+    const correctAnswer =
+      problem.correctAnswers?.[0] || currentWord.word;
+
+    if (!correctAnswer) return [];
+
+    // 실제 정답값은 word로 유지하고,
+    // 화면에는 reading을 표시합니다.
+    const wordOptions = words
+      .filter((word) => word.word)
+      .map((word) => ({
+        value: word.word,
+        label: word.reading || word.word,
+      }));
+
+    const uniqueOptions = Array.from(
+      new Map(
+        wordOptions.map((option) => [option.value, option])
+      ).values()
+    );
+
+    const correctOption = uniqueOptions.find(
+      (option) => option.value === correctAnswer
+    ) || {
+      value: correctAnswer,
+      label: currentWord.reading || correctAnswer,
+    };
+
+    const distractors = shuffle(
+      uniqueOptions.filter(
+        (option) => option.value !== correctAnswer
+      )
+    ).slice(0, 3);
+
+    return shuffle([correctOption, ...distractors]);
   }, [currentProblem, studyType, words, currentWord, problemStep]);
 
-  // 정답 확인 함수
+  // 정답 확인
   const handleCheckAnswer = useCallback(
     async (answer: string): Promise<CheckAnswerResponse> => {
       if (!currentProblem || !currentWord) {
@@ -197,24 +248,32 @@ const Study: React.FC = () => {
             ? (currentProblem as ConjugationProblem).formType
             : "";
 
-        const result: CheckAnswerResponse = await studySession.checkAnswerWithSession(
-          currentWord.id,
-          answer,
-          formType,
-          studyType
-        );
+        const result: CheckAnswerResponse =
+          await studySession.checkAnswerWithSession(
+            currentWord.id,
+            answer,
+            formType,
+            studyType
+          );
 
         return result;
       } catch (err) {
         throw new Error(
-          err instanceof Error ? err.message : "정답 확인 중 오류가 발생했습니다."
+          err instanceof Error
+            ? err.message
+            : "정답 확인 중 오류가 발생했습니다."
         );
       }
     },
-    [currentProblem, currentWord, studySession.checkAnswerWithSession, studyType]
+    [
+      currentProblem,
+      currentWord,
+      studySession.checkAnswerWithSession,
+      studyType,
+    ]
   );
 
-  // 다음 활용형/단어로 이동
+  // 다음 문제로 이동
   const handleNext = useCallback(async () => {
     if (words.length === 0) return;
 
@@ -225,8 +284,10 @@ const Study: React.FC = () => {
 
       if (currentFormIndex + 1 < availableForms.length) {
         const nextFormIndex = currentFormIndex + 1;
+
         setCurrentFormIndex(nextFormIndex);
         setProblemStep((prev) => prev + 1);
+
         await loadProblem(word.id, availableForms[nextFormIndex]);
       } else if (currentWordIndex + 1 < words.length) {
         const nextWordIndex = currentWordIndex + 1;
@@ -237,27 +298,30 @@ const Study: React.FC = () => {
         setCurrentFormIndex(0);
         setAvailableForms(nextWordForms);
         setProblemStep((prev) => prev + 1);
+
         await loadProblem(nextWord.id, nextWordForms[0]);
       } else {
         if (studySession.endStudySession) {
           await studySession.endStudySession();
         }
 
-        alert("모든 문제를 완료했습니다!");
+        alert("모든 문제를 완료했습니다! 🎉");
         navigate(-1);
       }
     } else {
       if (currentWordIndex + 1 < words.length) {
         const nextIndex = currentWordIndex + 1;
+
         setCurrentWordIndex(nextIndex);
         setProblemStep((prev) => prev + 1);
+
         await loadProblem(words[nextIndex].id);
       } else {
         if (studySession.endStudySession) {
           await studySession.endStudySession();
         }
 
-        alert("모든 문제를 완료했습니다!");
+        alert("모든 문제를 완료했습니다! 🎉");
         navigate(-1);
       }
     }
@@ -272,7 +336,7 @@ const Study: React.FC = () => {
     navigate,
   ]);
 
-  // 이전 활용형/단어로 이동
+  // 이전 문제로 이동
   const handlePrevious = useCallback(async () => {
     if (words.length === 0) return;
 
@@ -281,12 +345,20 @@ const Study: React.FC = () => {
 
       if (currentFormIndex > 0) {
         const prevFormIndex = currentFormIndex - 1;
+
         setCurrentFormIndex(prevFormIndex);
-        const word = words[currentWordIndex];
         setProblemStep((prev) => prev + 1);
-        await loadProblem(word.id, availableForms[prevFormIndex]);
+
+        await loadProblem(
+          words[currentWordIndex].id,
+          availableForms[prevFormIndex]
+        );
       } else {
-        const prevWordIndex = currentWordIndex === 0 ? words.length - 1 : currentWordIndex - 1;
+        const prevWordIndex =
+          currentWordIndex === 0
+            ? words.length - 1
+            : currentWordIndex - 1;
+
         const prevWord = words[prevWordIndex];
         const prevWordForms = Object.keys(prevWord.forms);
         const lastFormIndex = prevWordForms.length - 1;
@@ -295,21 +367,40 @@ const Study: React.FC = () => {
         setCurrentFormIndex(lastFormIndex);
         setAvailableForms(prevWordForms);
         setProblemStep((prev) => prev + 1);
-        await loadProblem(prevWord.id, prevWordForms[lastFormIndex]);
+
+        await loadProblem(
+          prevWord.id,
+          prevWordForms[lastFormIndex]
+        );
       }
     } else {
-      const prevIndex = currentWordIndex === 0 ? words.length - 1 : currentWordIndex - 1;
+      const prevIndex =
+        currentWordIndex === 0
+          ? words.length - 1
+          : currentWordIndex - 1;
+
       setCurrentWordIndex(prevIndex);
       setProblemStep((prev) => prev + 1);
+
       await loadProblem(words[prevIndex].id);
     }
-  }, [words, availableForms, currentWordIndex, currentFormIndex, loadProblem, studyType]);
+  }, [
+    words,
+    availableForms,
+    currentWordIndex,
+    currentFormIndex,
+    loadProblem,
+    studyType,
+  ]);
 
   const getTotalCount = useCallback(() => {
     if (words.length === 0) return 0;
 
     if (studyType === "conjugation") {
-      return words.reduce((sum, word) => sum + Object.keys(word.forms).length, 0);
+      return words.reduce(
+        (sum, word) => sum + Object.keys(word.forms).length,
+        0
+      );
     }
 
     return words.length;
@@ -343,7 +434,9 @@ const Study: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-        <div className="text-red-500 text-lg mb-4 text-center px-4">{error}</div>
+        <div className="text-red-500 text-lg mb-4 text-center px-4">
+          {error}
+        </div>
 
         <div className="text-sm text-gray-600 mb-4">
           현재 설정: 레벨={level}, 품사={partId}
@@ -370,7 +463,8 @@ const Study: React.FC = () => {
     );
   }
 
-  const studyTypeLabel = studyType === "conjugation" ? "활용형" : "예문";
+  const studyTypeLabel =
+    studyType === "conjugation" ? "활용형" : "예문";
 
   const baseProps = {
     key: `${currentWord.id}-${problemStep}`,
@@ -389,19 +483,24 @@ const Study: React.FC = () => {
     placeholder: "",
   };
 
-  // 문장 학습 뷰
+  // 예문 학습
   if (studyType === "sentence") {
     const problem = currentProblem as SentenceProblem;
 
     return (
       <StudyPageComponent
         {...baseProps}
-        showHints={true}
         additionalInfo={
           <div className="space-y-3">
             <div>
-              <div className="text-2xl font-bold text-gray-800">{currentWord.word}</div>
-              <div className="text-sm text-gray-400">{currentWord.reading}</div>
+              <div className="text-sm text-gray-400">
+                {currentWord.word}
+              </div>
+
+              <div className="text-2xl font-bold text-gray-800">
+                {currentWord.reading}
+              </div>
+
               <div className="text-base font-medium text-gray-700 mt-1">
                 {problem.meaning}
               </div>
@@ -422,43 +521,34 @@ const Study: React.FC = () => {
     );
   }
 
-  // 활용형 학습 뷰
+  // 활용형 학습
   if (studyType === "conjugation") {
     const problem = currentProblem as ConjugationProblem;
 
     return (
       <StudyPageComponent
         {...baseProps}
-        showHints={false}
         additionalInfo={
           <div className="space-y-3">
             <div>
-              {/* 요미가나를 단어 위에 배치 */}
-              <div className="text-sm text-gray-400">{problem.reading}</div>
-              <div className="text-2xl font-bold text-gray-800">{problem.word}</div>
+              <div className="text-sm text-gray-400">
+                {problem.word}
+              </div>
+
+              <div className="text-2xl font-bold text-gray-800">
+                {problem.reading}
+              </div>
+
               <div className="text-base font-medium text-gray-700 mt-1">
                 {problem.meaning}
               </div>
             </div>
 
-            {/* 예문과 해석: 데이터가 있는 경우에만 표시 */}
-            {currentWord.exampleSentence && (
-              <div className="bg-gray-50 p-4 rounded-xl text-left space-y-2">
-                <div className="text-base text-gray-800">
-                  {currentWord.exampleSentence}
-                </div>
-
-                {currentWord.exampleTranslation && (
-                  <div className="text-sm text-gray-500">
-                    {currentWord.exampleTranslation}
-                  </div>
-                )}
-              </div>
-            )}
-
             <div className="bg-gray-50 p-4 rounded-xl text-base font-medium text-gray-800">
               <span>{problem.word}</span>의{" "}
-              <span className="font-bold text-sakura-dark">{problem.formName}</span>
+              <span className="font-bold text-sakura-dark">
+                {problem.formName}
+              </span>
 
               <div className="flex justify-center space-x-1 mt-3">
                 {availableForms.map((form, index) => (
@@ -484,7 +574,9 @@ const Study: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="text-lg text-red-500">잘못된 학습 유형입니다.</div>
+      <div className="text-lg text-red-500">
+        잘못된 학습 유형입니다.
+      </div>
     </div>
   );
 };
