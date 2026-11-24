@@ -299,12 +299,20 @@ const MainSelectView: React.FC<{
     <SelectPage
       headerTitle="나의 학습"
       headerExtra={
-        <button
-          onClick={() => navigate("/tutorial")}
-          className="px-4 py-2 text-sm font-semibold text-white bg-sakura rounded-xl hover:opacity-90 transition-all"
-        >
-          튜토리얼
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate("/tutorial")}
+            className="px-4 py-2 text-sm font-semibold text-white bg-sakura rounded-xl hover:opacity-90 transition-all"
+          >
+            튜토리얼
+          </button>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 text-sm font-semibold text-sakura-dark border border-sakura rounded-xl hover:bg-sakura/5 transition-all"
+          >
+            로그아웃
+          </button>
+        </div>
       }
       headerLeft={
         <button
@@ -329,14 +337,6 @@ const MainSelectView: React.FC<{
       }
       showBackButton={false}
       items={items}
-      footerContent={
-        <button
-          onClick={handleLogout}
-          className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-800 transition-colors"
-        >
-          로그아웃
-        </button>
-      }
     />
   );
 };
