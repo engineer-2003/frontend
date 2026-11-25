@@ -7,6 +7,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
+
 import { useLocation, useNavigate } from "react-router-dom";
 import StudyPageComponent from "../../components/StudyPage";
 import { useStudySession } from "../../hooks/useStudySession";
@@ -27,6 +28,9 @@ interface ConjugationProblem {
   blankSentence: string;
   exampleSentence: string;
   exampleTranslation: string;
+  available?: boolean;
+  fallbackUsed?: boolean;
+  matchedText?: string;
 }
 
 interface SentenceProblem {
@@ -56,35 +60,58 @@ export interface StudyOption {
   label: string;
 }
 
+interface ConjugationItem {
+  word: WordDto;
+  problem: ConjugationProblem;
+}
+
 type SentencePhase = "learning" | "test";
 
 const WORDS_PER_SET = 10;
 
-const shuffle = <T,>(arr: T[]): T[] =>
-  [...arr].sort(() => Math.random() - 0.5);
+/**
+ * 배열 무작위 섞기
+ */
+const shuffle = <T,>(arr: T[]): T[] => {
+  const result = [...arr];
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result;
+};
 
 /**
- * 예문에 실제 활용형이 포함되어 있는지 확인
+ * 활용형 표기 정규화
  */
-const hasMatchingConjugationForm = (word: WordDto): boolean => {
-  const sentence = word.exampleSentence;
-  const forms = word.forms;
+const normalizeForm = (form: string): string => {
+  return form.trim().replace(/[()（）]/g, "");
+};
 
-  if (!sentence || !forms || Object.keys(forms).length === 0) {
+/**
+ * 활용형 데이터 유효성 검사
+ */
+const isValidForm = (form: unknown): form is string => {
+  if (typeof form !== "string") {
     return false;
   }
 
-  return Object.values(forms).some(
-    (form) =>
-      typeof form === "string" &&
-      form.trim().length > 0 &&
-      sentence.includes(form)
+  const value = form.trim();
+
+  return (
+    value.length > 0 &&
+    value !== "-" &&
+    value.toLowerCase() !== "null" &&
+    value.toLowerCase() !== "nan"
   );
 };
 
 const Study: React.FC = () => {
   const BASE_API_URL =
-    import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8080";
+    import.meta.env.VITE_BACKEND_API_URL ||
+    "http://localhost:8080";
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -108,6 +135,13 @@ const Study: React.FC = () => {
     ConjugationProblem | SentenceProblem | null
   >(null);
 
+  const [conjugationItems, setConjugationItems] =
+    useState<ConjugationItem[]>([]);
+
+  const [preparingProblems, setPreparingProblems] = useState(
+    studyType === "conjugation"
+  );
+
   const studySession = useStudySession({
     level,
     partId,
@@ -116,81 +150,211 @@ const Study: React.FC = () => {
   });
 
   /**
-   * 활용형 학습에서는 예문에 실제 활용형이 존재하는 단어만 사용
+   * 활용형 학습에서는 프론트엔드에서
+   * 단어를 임의로 제거하지 않습니다.
    */
-  const filterConjugatableWords = useCallback(
-    (wordsData: WordDto[]) => {
-      if (studyType === "conjugation") {
-        return wordsData.filter(hasMatchingConjugationForm);
-      }
-
-      return wordsData;
-    },
-    [studyType]
+  const filterWords = useCallback(
+    (wordsData: WordDto[]) => wordsData,
+    []
   );
 
-  const { words, loading, error } = useWordsFetch({
+  const {
+    words: fetchedWords,
+    loading,
+    error,
+  } = useWordsFetch({
     level,
     partId,
     studyType,
     isRetryMode,
-    filterWords: filterConjugatableWords,
+    filterWords,
   });
 
   /**
+   * 인증 헤더
+   */
+  const getAuthHeaders = useCallback((): HeadersInit => {
+    const token = localStorage.getItem("token");
+
+    const headers: HeadersInit = {};
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    return headers;
+  }, []);
+
+  /**
+   * 활용형 문제 가져오기
+   */
+  const fetchConjugationProblem = useCallback(
+    async (
+      wordId: number
+    ): Promise<ConjugationProblem | null> => {
+      try {
+        const url =
+          `${BASE_API_URL}/study/${wordId}/form-problem`;
+
+        const response = await fetch(url, {
+          method: "GET",
+          headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+          console.error(
+            "활용형 API 응답 오류:",
+            wordId,
+            response.status,
+            response.statusText
+          );
+
+          return null;
+        }
+
+        const problemData: ConjugationProblem =
+          await response.json();
+
+        if (
+          !problemData ||
+          problemData.available === false ||
+          !isValidForm(problemData.correctAnswer) ||
+          !problemData.formType ||
+          !problemData.blankSentence
+        ) {
+          console.warn(
+            "유효하지 않은 활용형 문제:",
+            wordId,
+            problemData
+          );
+
+          return null;
+        }
+
+        return problemData;
+
+      } catch (err) {
+        console.error(
+          `활용형 문제 로드 실패 - 단어 ID: ${wordId}`,
+          err
+        );
+
+        return null;
+      }
+    },
+    [BASE_API_URL, getAuthHeaders]
+  );
+
+  /**
    * 문제 로드
-   *
-   * 활용형 학습은 백엔드가 예문에 실제로 등장하는
-   * 활용형 하나를 선택해서 반환합니다.
    */
   const loadProblem = useCallback(
     async (
       wordId: number
     ): Promise<ConjugationProblem | SentenceProblem | null> => {
       try {
-        let url: string;
-
         if (studyType === "conjugation") {
-          url = `${BASE_API_URL}/study/${wordId}/form-problem`;
-        } else {
-          url = `${BASE_API_URL}/study/${wordId}/sentence-problem`;
+          const item = conjugationItems.find(
+            (item) => item.word.id === wordId
+          );
+
+          if (!item) {
+            setCurrentProblem(null);
+            return null;
+          }
+
+          setCurrentProblem(item.problem);
+          return item.problem;
         }
 
-        const response = await fetch(url);
+        setCurrentProblem(null);
+
+        const url =
+          `${BASE_API_URL}/study/${wordId}/sentence-problem`;
+
+        const response = await fetch(url, {
+          headers: getAuthHeaders(),
+        });
 
         if (!response.ok) {
-          throw new Error("문제를 가져오는데 실패했습니다.");
+          throw new Error(
+            `문제 조회 실패: ${response.status}`
+          );
         }
 
-        const problemData:
-          | ConjugationProblem
-          | SentenceProblem = await response.json();
+        const problemData: SentenceProblem =
+          await response.json();
 
         setCurrentProblem(problemData);
 
         return problemData;
+
       } catch (err) {
         console.error("문제 로드 중 오류:", err);
         setCurrentProblem(null);
         return null;
       }
     },
-    [BASE_API_URL, studyType]
+    [
+      BASE_API_URL,
+      studyType,
+      conjugationItems,
+      getAuthHeaders,
+    ]
   );
 
   /**
-   * 학습 세션 초기화
+   * 실제 학습에 사용할 단어 목록
+   */
+  const words = useMemo<WordDto[]>(() => {
+    if (studyType === "conjugation") {
+      return conjugationItems.map((item) => item.word);
+    }
+
+    return fetchedWords;
+  }, [studyType, conjugationItems, fetchedWords]);
+
+  const currentWord = words[currentWordIndex];
+
+  /**
+   * 학습 세션 및 문제 상태 초기화
    */
   useEffect(() => {
     sessionStartedRef.current = false;
-  }, [level, partId, isRetryMode, studyType]);
 
+    setCurrentWordIndex(0);
+    setProblemStep(0);
+    setBatchStartIndex(0);
+    setSentencePhase("learning");
+
+    setCurrentProblem(null);
+    setConjugationItems([]);
+
+    setPreparingProblems(studyType === "conjugation");
+
+  }, [
+    level,
+    partId,
+    isRetryMode,
+    studyType,
+  ]);
+
+  /**
+   * 학습 시작 및 활용형 문제 사전 준비
+   */
   useEffect(() => {
-    if (words.length === 0 || sessionStartedRef.current) {
+    if (loading || sessionStartedRef.current) {
+      return;
+    }
+
+    if (fetchedWords.length === 0) {
+      setPreparingProblems(false);
       return;
     }
 
     sessionStartedRef.current = true;
+
+    let cancelled = false;
 
     const initializeStudy = async () => {
       setCurrentWordIndex(0);
@@ -198,24 +362,161 @@ const Study: React.FC = () => {
       setBatchStartIndex(0);
       setSentencePhase("learning");
 
-      await loadProblem(words[0].id);
+      console.log("===== 학습 초기화 =====");
+      console.log("레벨:", level);
+      console.log("품사:", partId);
+      console.log("학습 유형:", studyType);
+      console.log("조회된 단어 수:", fetchedWords.length);
 
-      if (studySession.startStudySession) {
+      /**
+       * 활용형 학습
+       */
+      if (studyType === "conjugation") {
+        setPreparingProblems(true);
+
+        const availableItems: ConjugationItem[] = [];
+
+        for (const word of shuffle(fetchedWords)) {
+          if (cancelled) {
+            return;
+          }
+
+          if (!word || !word.id) {
+            continue;
+          }
+
+          console.log("활용형 문제 요청:", {
+            id: word.id,
+            word: word.word,
+            reading: word.reading,
+            forms: word.forms,
+            exampleSentence: word.exampleSentence,
+          });
+
+          const problem =
+            await fetchConjugationProblem(word.id);
+
+          if (!problem) {
+            console.warn(
+              "출제 불가능한 단어:",
+              word.id,
+              word.word
+            );
+
+            continue;
+          }
+
+          console.log("문제 생성 성공:", {
+            word: word.word,
+            formType: problem.formType,
+            formName: problem.formName,
+            answer: problem.correctAnswer,
+            fallbackUsed: problem.fallbackUsed,
+          });
+
+          availableItems.push({
+            word,
+            problem,
+          });
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        console.log(
+          "최종 출제 가능 단어 수:",
+          availableItems.length
+        );
+
+        setConjugationItems(availableItems);
+
+        if (availableItems.length > 0) {
+          setCurrentWordIndex(0);
+          setCurrentProblem(availableItems[0].problem);
+
+          if (studySession.startStudySession) {
+            studySession.startStudySession();
+          }
+        } else {
+          setCurrentProblem(null);
+        }
+
+        setPreparingProblems(false);
+        return;
+      }
+
+      /**
+       * 예문 학습
+       */
+      const firstWord = fetchedWords[0];
+
+      if (firstWord) {
+        const url =
+          `${BASE_API_URL}/study/${firstWord.id}/sentence-problem`;
+
+        try {
+          const response = await fetch(url, {
+            headers: getAuthHeaders(),
+          });
+
+          if (!response.ok) {
+            throw new Error(
+              `문제 조회 실패: ${response.status}`
+            );
+          }
+
+          const problemData: SentenceProblem =
+            await response.json();
+
+          if (cancelled) {
+            return;
+          }
+
+          setCurrentProblem(problemData);
+
+        } catch (err) {
+          console.error("첫 번째 예문 문제 로드 실패:", err);
+
+          if (!cancelled) {
+            setCurrentProblem(null);
+          }
+        }
+      }
+
+      if (!cancelled && studySession.startStudySession) {
         studySession.startStudySession();
       }
     };
 
     initializeStudy();
-  }, [words, loadProblem, studySession.startStudySession]);
 
-  const currentWord = words[currentWordIndex];
+    return () => {
+      cancelled = true;
+    };
 
+  }, [
+    loading,
+    fetchedWords,
+    studyType,
+    fetchConjugationProblem,
+    BASE_API_URL,
+    getAuthHeaders,
+    studySession.startStudySession,
+    level,
+    partId,
+  ]);
+
+  /**
+   * 현재 세트의 단어 수
+   */
   const currentSetCount = Math.min(
     WORDS_PER_SET,
     Math.max(0, words.length - batchStartIndex)
   );
 
-  const currentSetPosition = currentWordIndex - batchStartIndex;
+  const currentSetPosition =
+    currentWordIndex - batchStartIndex;
 
   /**
    * 선택지 생성
@@ -226,30 +527,48 @@ const Study: React.FC = () => {
     }
 
     if (studyType === "conjugation") {
-      const problem = currentProblem as ConjugationProblem;
+      const problem =
+        currentProblem as ConjugationProblem;
+
       const correctAnswer = problem.correctAnswer;
 
+      if (!correctAnswer) {
+        return [];
+      }
+
       const sameWordForms = currentWord.forms
-        ? Object.values(currentWord.forms).filter(
-            (form) => form && form !== correctAnswer
-          )
+        ? Object.values(currentWord.forms)
+            .filter(isValidForm)
+            .map(normalizeForm)
+            .filter(
+              (form) =>
+                form !== normalizeForm(correctAnswer)
+            )
         : [];
 
       const otherWordForms = words
         .flatMap((word) =>
-          word.forms ? Object.values(word.forms) : []
+          word.forms
+            ? Object.values(word.forms)
+            : []
         )
+        .filter(isValidForm)
+        .map(normalizeForm)
         .filter(
           (form) =>
-            form &&
-            form !== correctAnswer &&
+            form !== normalizeForm(correctAnswer) &&
             !sameWordForms.includes(form)
         );
 
-      const distractors = [
-        ...shuffle(sameWordForms),
-        ...shuffle(otherWordForms),
-      ].slice(0, 3);
+      const uniqueDistractors = Array.from(
+        new Set([
+          ...shuffle(sameWordForms),
+          ...shuffle(otherWordForms),
+        ])
+      );
+
+      const distractors =
+        uniqueDistractors.slice(0, 3);
 
       return shuffle(
         [correctAnswer, ...distractors].map((value) => ({
@@ -260,6 +579,7 @@ const Study: React.FC = () => {
     }
 
     const problem = currentProblem as SentenceProblem;
+
     const correctAnswer =
       problem.correctAnswers?.[0] || currentWord.word;
 
@@ -276,16 +596,20 @@ const Study: React.FC = () => {
 
     const uniqueOptions = Array.from(
       new Map(
-        wordOptions.map((option) => [option.value, option])
+        wordOptions.map((option) => [
+          option.value,
+          option,
+        ])
       ).values()
     );
 
-    const correctOption = uniqueOptions.find(
-      (option) => option.value === correctAnswer
-    ) || {
-      value: correctAnswer,
-      label: currentWord.reading || correctAnswer,
-    };
+    const correctOption =
+      uniqueOptions.find(
+        (option) => option.value === correctAnswer
+      ) || {
+        value: correctAnswer,
+        label: currentWord.reading || correctAnswer,
+      };
 
     const distractors = shuffle(
       uniqueOptions.filter(
@@ -293,14 +617,25 @@ const Study: React.FC = () => {
       )
     ).slice(0, 5);
 
-    return shuffle([correctOption, ...distractors]);
-  }, [currentProblem, studyType, words, currentWord, problemStep]);
+    return shuffle([
+      correctOption,
+      ...distractors,
+    ]);
+
+  }, [
+    currentProblem,
+    studyType,
+    words,
+    currentWord,
+  ]);
 
   /**
    * 정답 확인
    */
   const handleCheckAnswer = useCallback(
-    async (answer: string): Promise<CheckAnswerResponse> => {
+    async (
+      answer: string
+    ): Promise<CheckAnswerResponse> => {
       if (!currentProblem || !currentWord) {
         throw new Error("문제가 로드되지 않았습니다.");
       }
@@ -317,6 +652,7 @@ const Study: React.FC = () => {
           formType,
           studyType
         );
+
       } catch (err) {
         throw new Error(
           err instanceof Error
@@ -341,13 +677,17 @@ const Study: React.FC = () => {
       return;
     }
 
-    // 예문 학습
+    /**
+     * 예문 학습
+     */
     if (studyType === "sentence") {
-      // 단어 학습 단계
       if (sentencePhase === "learning") {
         const nextIndex = currentWordIndex + 1;
 
-        if (nextIndex < batchStartIndex + currentSetCount) {
+        if (
+          nextIndex <
+          batchStartIndex + currentSetCount
+        ) {
           setCurrentWordIndex(nextIndex);
           setProblemStep((prev) => prev + 1);
 
@@ -355,19 +695,23 @@ const Study: React.FC = () => {
           return;
         }
 
-        // 학습 완료 후 테스트 시작
         setSentencePhase("test");
         setCurrentWordIndex(batchStartIndex);
         setProblemStep((prev) => prev + 1);
 
-        await loadProblem(words[batchStartIndex].id);
+        await loadProblem(
+          words[batchStartIndex].id
+        );
+
         return;
       }
 
-      // 테스트 단계
       const nextIndex = currentWordIndex + 1;
 
-      if (nextIndex < batchStartIndex + currentSetCount) {
+      if (
+        nextIndex <
+        batchStartIndex + currentSetCount
+      ) {
         setCurrentWordIndex(nextIndex);
         setProblemStep((prev) => prev + 1);
 
@@ -375,8 +719,8 @@ const Study: React.FC = () => {
         return;
       }
 
-      // 다음 10개 단어 세트
-      const nextBatchStart = batchStartIndex + WORDS_PER_SET;
+      const nextBatchStart =
+        batchStartIndex + WORDS_PER_SET;
 
       if (nextBatchStart < words.length) {
         setBatchStartIndex(nextBatchStart);
@@ -388,7 +732,6 @@ const Study: React.FC = () => {
         return;
       }
 
-      // 전체 학습 완료
       if (studySession.endStudySession) {
         await studySession.endStudySession();
       }
@@ -400,7 +743,6 @@ const Study: React.FC = () => {
 
     /**
      * 활용형 학습
-     * 단어당 문제 하나만 출제
      */
     if (studyType === "conjugation") {
       const nextIndex = currentWordIndex + 1;
@@ -413,7 +755,6 @@ const Study: React.FC = () => {
         return;
       }
 
-      // 모든 활용형 예문 학습 완료
       if (studySession.endStudySession) {
         await studySession.endStudySession();
       }
@@ -421,6 +762,7 @@ const Study: React.FC = () => {
       alert("모든 활용형 예문 학습을 완료했습니다!");
       navigate(-1);
     }
+
   }, [
     words,
     studyType,
@@ -437,7 +779,10 @@ const Study: React.FC = () => {
    * 이전 문제
    */
   const handlePrevious = useCallback(async () => {
-    if (words.length === 0 || studyType === "sentence") {
+    if (
+      words.length === 0 ||
+      studyType === "sentence"
+    ) {
       return;
     }
 
@@ -446,10 +791,12 @@ const Study: React.FC = () => {
         ? words.length - 1
         : currentWordIndex - 1;
 
+    setCurrentProblem(null);
     setCurrentWordIndex(prevIndex);
     setProblemStep((prev) => prev + 1);
 
     await loadProblem(words[prevIndex].id);
+
   }, [
     words,
     studyType,
@@ -469,9 +816,13 @@ const Study: React.FC = () => {
       return currentSetCount;
     }
 
-    // 활용형 학습은 단어당 한 문제
     return words.length;
-  }, [words, studyType, currentSetCount]);
+
+  }, [
+    words,
+    studyType,
+    currentSetCount,
+  ]);
 
   /**
    * 현재 문제 위치
@@ -486,6 +837,7 @@ const Study: React.FC = () => {
     }
 
     return currentWordIndex;
+
   }, [
     words,
     studyType,
@@ -496,21 +848,28 @@ const Study: React.FC = () => {
   /**
    * 로딩 화면
    */
-  if (loading) {
+  if (
+    loading ||
+    (studyType === "conjugation" && preparingProblems)
+  ) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-lg">로딩 중...</div>
+        <div className="text-lg text-center px-6">
+          {studyType === "conjugation"
+            ? "출제할 수 있는 활용형 문제를 확인하고 있습니다..."
+            : "로딩 중..."}
+        </div>
       </div>
     );
   }
 
   /**
-   * 오류 화면
+   * API 오류
    */
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-        <div className="text-red-500 text-lg mb-4 text-center px-4">
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-6">
+        <div className="text-red-500 text-lg mb-4 text-center">
           {error}
         </div>
 
@@ -519,14 +878,12 @@ const Study: React.FC = () => {
           {isRetryMode && ", 재학습 모드"}
         </div>
 
-        {isRetryMode && error.includes("재학습할") && (
-          <button
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-sakura-dark text-white rounded-lg"
-          >
-            돌아가기
-          </button>
-        )}
+        <button
+          onClick={() => navigate(-1)}
+          className="px-5 py-3 bg-sakura-dark text-white rounded-xl"
+        >
+          돌아가기
+        </button>
       </div>
     );
   }
@@ -539,8 +896,12 @@ const Study: React.FC = () => {
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-6 text-center">
         <div className="text-lg font-medium text-gray-700">
           {studyType === "conjugation"
-            ? "예문에서 학습할 활용형을 찾을 수 있는 단어가 없습니다."
+            ? "학습 가능한 활용형 문제가 없습니다. 단어 데이터와 활용형 정보를 확인해 주세요."
             : "학습할 단어가 없습니다."}
+        </div>
+
+        <div className="mt-3 text-sm text-gray-500">
+          레벨: {level} / 품사: {partId}
         </div>
 
         <button
@@ -559,7 +920,9 @@ const Study: React.FC = () => {
   if (!currentProblem || !currentWord) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-lg">문제를 로드하는 중...</div>
+        <div className="text-lg">
+          문제를 로드하는 중...
+        </div>
       </div>
     );
   }
@@ -585,12 +948,11 @@ const Study: React.FC = () => {
   };
 
   /**
-   * 예문 학습 및 테스트
+   * 예문 학습
    */
   if (studyType === "sentence") {
     const problem = currentProblem as SentenceProblem;
 
-    // 단어 학습 단계
     if (sentencePhase === "learning") {
       return (
         <StudyPageComponent
@@ -625,7 +987,6 @@ const Study: React.FC = () => {
       );
     }
 
-    // 예문 테스트 단계
     return (
       <StudyPageComponent
         {...baseProps}
@@ -652,10 +1013,11 @@ const Study: React.FC = () => {
   }
 
   /**
-   * 예문 기반 활용형 학습
+   * 활용형 학습
    */
   if (studyType === "conjugation") {
-    const problem = currentProblem as ConjugationProblem;
+    const problem =
+      currentProblem as ConjugationProblem;
 
     return (
       <StudyPageComponent
@@ -674,6 +1036,10 @@ const Study: React.FC = () => {
 
               <div className="text-base font-medium text-gray-700 mt-1">
                 {problem.meaning}
+              </div>
+
+              <div className="mt-2 text-sm text-sakura-dark font-medium">
+                {problem.formName || problem.formType}
               </div>
             </div>
 
